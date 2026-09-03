@@ -1,6 +1,16 @@
 import AppKit
+import ApplicationServices
 import ClipboardPlusCore
 import Foundation
+
+if CommandLine.arguments.contains("--check-accessibility") || CommandLine.arguments.contains("--request-accessibility") {
+    let shouldPrompt = CommandLine.arguments.contains("--request-accessibility")
+    let trusted = shouldPrompt
+        ? AXIsProcessTrustedWithOptions(["AXTrustedCheckOptionPrompt": true] as CFDictionary)
+        : AXIsProcessTrusted()
+    print(trusted ? "trusted" : "not-trusted")
+    exit(trusted ? 0 : 2)
+}
 
 @MainActor
 final class ClipboardMonitor {

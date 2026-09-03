@@ -34,7 +34,9 @@ npm run install:companion
 
 This installs a local `ClipboardPlus.app` menu-bar companion and Native Messaging host under `~/Library/Application Support/ClipboardPlus`, registers `com.clipboardplus.native` for Chrome, and starts the companion through a LaunchAgent. Reload the unpacked extension afterward.
 
-Use the `C+` menu to pause or resume system-wide capture. To remove the companion while preserving its pending queue, run `zsh scripts/uninstall-macos-companion.sh`; add `--purge` to remove the queue and log as well.
+The installer creates one private, device-local signing keychain under Clipboard+'s Application Support folder. This gives every locally built companion the same macOS identity, allowing Accessibility approval to survive later Clipboard+ updates. The signing identity is used only by the local installer and is not uploaded or shared; uninstalling with `--purge` removes it.
+
+Use the `C+` menu to pause or resume system-wide capture. To remove the companion while preserving its pending queue and signing identity, run `zsh scripts/uninstall-macos-companion.sh`; add `--purge` to remove the queue, log, local history, and signing identity as well.
 
 ### Quick Paste
 
@@ -43,6 +45,8 @@ Press **Control-Shift-V** from any application to open the native Quick Paste pa
 Every result shows the copied content as the large primary line. When available, its source website, category, and source application appear below it, so page titles never compete with the value that will actually be pasted.
 
 The first automatic paste asks for Clipboard+ Companion under **System Settings → Privacy & Security → Accessibility**. If permission is declined, Clipboard+ still copies the selected clip so it can be pasted normally. Quick Paste locally mirrors up to 500 clips from Chrome, prioritizing favorites, and also includes new system-wide captures immediately.
+
+Upgrading from 1.5.0 or 1.5.1 resets the old build-specific Accessibility entry once. Double-click a Quick Paste result, enable the newly requested **ClipboardPlus** entry, and try again. Later updates retain that approval.
 
 ## Privacy and capture boundaries
 

@@ -2,6 +2,14 @@
 
 Clipboard+'s Git history was reconstructed from local development milestones after versions 1.0.0 through 1.4.2 had already been built. Those tags preserve the rollout order; their publication timestamps are intentionally not backdated. Releases from 1.5.0 onward follow the live project history.
 
+## 1.5.2
+
+- Sign the macOS companion with a persistent, device-local identity instead of a build-specific ad-hoc identity.
+- Preserve Accessibility approval across future companion updates.
+- Reset the stale ad-hoc Accessibility record once during migration so macOS can bind approval to the stable app identity.
+- Verify the installed app's signature before starting the companion.
+- Add a signed companion diagnostic that checks or requests Accessibility access without opening the Quick Paste window.
+
 ## 1.5.1
 
 - Make the copied content the large, bold primary line in every Chrome and macOS Quick Paste row.

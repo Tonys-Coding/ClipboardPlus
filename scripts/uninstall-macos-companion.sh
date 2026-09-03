@@ -15,6 +15,7 @@ host_manifests=(
 
 if [[ "${1:-}" == "--purge" ]]; then
   /bin/rm -f "$install_dir/companion-queue.json" "$install_dir/companion-queue.lock" "$install_dir/palette-history.json" "$install_dir/companion.log"
+  /bin/rm -rf "$install_dir/Signing"
 fi
 
 echo "Clipboard+ companion uninstalled. Existing queue data was preserved unless --purge was supplied."
