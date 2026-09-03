@@ -1,0 +1,9 @@
+{
+  "name": "com.clipboardplus.native",
+  "description": "Clipboard+ local macOS bridge",
+  "path": "__NATIVE_HOST_PATH__",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://focamiihbogkjellkdfadkfmanpjlbng/"
+  ]
+}

@@ -38,8 +38,8 @@ export function addClip(state: StorageState, input: AddClipInput, now = Date.now
   if (content.length > MAX_CLIP_LENGTH) throw new Error('Clipboard item is too long.');
   const duplicate = state.clips.find((clip) => clip.content === content);
   const next: Clip = duplicate
-    ? { ...duplicate, type: detectClipType(content), title: input.title?.trim() || duplicate.title, sourceUrl: input.sourceUrl || duplicate.sourceUrl, updatedAt: now }
-    : { id: input.id || id, type: detectClipType(content), content, title: input.title?.trim() || undefined, sourceUrl: input.sourceUrl, favorite: false, createdAt: now, updatedAt: now };
+    ? { ...duplicate, type: detectClipType(content), title: input.title?.trim() || duplicate.title, sourceUrl: input.sourceUrl || duplicate.sourceUrl, sourceApp: input.sourceApp || duplicate.sourceApp, updatedAt: now }
+    : { id: input.id || id, type: detectClipType(content), content, title: input.title?.trim() || undefined, sourceUrl: input.sourceUrl, sourceApp: input.sourceApp, favorite: false, createdAt: now, updatedAt: now };
   return { ...state, clips: pruneClips([next, ...state.clips.filter((clip) => clip.id !== next.id)], state.settings.historyLimit) };
 }
 
@@ -56,5 +56,5 @@ export function migrateState(value: unknown): StorageState {
 export function filterClips(clips: Clip[], query: string): Clip[] {
   const needle = query.trim().toLowerCase();
   if (!needle) return clips;
-  return clips.filter((clip) => [clip.content, clip.title, clip.sourceUrl].some((value) => value?.toLowerCase().includes(needle)));
+  return clips.filter((clip) => [clip.content, clip.title, clip.sourceUrl, clip.sourceApp].some((value) => value?.toLowerCase().includes(needle)));
 }

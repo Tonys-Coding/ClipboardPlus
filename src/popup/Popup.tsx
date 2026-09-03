@@ -21,7 +21,7 @@ export function Popup() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    void sendMessage({ type: 'GET_STATE' }).then((response) => response.state && setState(response.state)).catch((error: Error) => setMessage(error.message));
+    void sendMessage({ type: 'SYNC_COMPANION' }).then((response) => response.state && setState(response.state)).catch((error: Error) => setMessage(error.message));
     const listener = (changes: Record<string, chrome.storage.StorageChange>, area: string) => {
       if (area === 'local' && changes[STORAGE_KEY]?.newValue) setState(changes[STORAGE_KEY].newValue as StorageState);
     };

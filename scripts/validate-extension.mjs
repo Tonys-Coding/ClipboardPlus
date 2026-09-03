@@ -8,6 +8,15 @@ if (manifest.manifest_version !== 3) {
   throw new Error('The generated extension is not Manifest V3.');
 }
 
+if (!manifest.permissions.includes('nativeMessaging')) {
+  throw new Error('The generated extension is missing its Native Messaging permission.');
+}
+
+const nativeManifestTemplate = JSON.parse(await readFile(resolve(outputDirectory, '..', 'native', 'Installer', 'com.clipboardplus.native.json.template'), 'utf8'));
+if (nativeManifestTemplate.name !== 'com.clipboardplus.native' || nativeManifestTemplate.allowed_origins.length === 0) {
+  throw new Error('The Native Messaging manifest template is invalid.');
+}
+
 const referencedFiles = [
   manifest.background.service_worker,
   manifest.action.default_popup,
@@ -26,4 +35,4 @@ for (const script of manifest.content_scripts.flatMap((entry) => entry.js)) {
   }
 }
 
-console.log(`Extension validation passed for ${referencedFiles.length} referenced files and classic content-script syntax.`);
+console.log(`Extension validation passed for ${referencedFiles.length} referenced files, classic content-script syntax, and Native Messaging configuration.`);

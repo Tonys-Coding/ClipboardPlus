@@ -2,8 +2,8 @@
   "manifest_version": 3,
   "name": "Clipboard+",
   "description": "A fast, private clipboard history for text and links.",
-  "version": "1.1.0",
-  "permissions": ["storage", "activeTab", "clipboardWrite", "scripting", "contextMenus"],
+  "version": "1.2.0",
+  "permissions": ["storage", "activeTab", "clipboardWrite", "scripting", "contextMenus", "nativeMessaging"],
   "host_permissions": ["<all_urls>"],
   "incognito": "not_allowed",
   "icons": {
