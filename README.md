@@ -1,6 +1,6 @@
 # Clipboard+
 
-Clipboard+ is a private, local-first clipboard history for Chrome and macOS. The extension classifies text, links, and recognizable code, and provides favorites, search, editing, and one-click copying; the optional menu-bar companion captures text across applications and opens a global Quick Paste palette for keyboard-first reuse.
+Clipboard+ is a private, local-first clipboard history for Chrome and macOS. The extension classifies text, links, and recognizable code, and provides favorites, search, smart snippets, paste transformations, editing, and one-click copying; the optional menu-bar companion captures text across applications and opens a global Quick Paste palette for keyboard-first reuse.
 
 ## Development
 
@@ -40,7 +40,7 @@ Use the `C+` menu to pause or resume system-wide capture. To remove the companio
 
 ### Quick Paste
 
-Press **Control-Shift-V** from any application to open the native Quick Paste palette. Start typing to search clip content, titles, source applications, and URLs; use the arrow keys to select a result, then press **Return** to paste it into the application you were using. Press **Command-Return** to copy the result without automatically pasting, or **Escape** to close the palette.
+Press **Control-Shift-V** from any application to open the native Quick Paste palette. Start typing to search clip content, titles, source applications, and URLs; use the arrow keys to select a result, then press **Return** to paste it into the application you were using. Press **Command-Return** to copy the result without automatically pasting, **Option-Return** to choose a paste transformation, or **Escape** to close the palette. Selecting a smart snippet opens its fill-in fields before Clipboard+ pastes it.
 
 Every result shows the copied content as the large primary line. When available, its source website, category, and source application appear below it, so page titles never compete with the value that will actually be pasted. The Chrome popup and native palette share the official logo, bundled Satoshi variable font, compact spacing, and flat result-row treatment. Satoshi is supplied by Indian Type Foundry through Fontshare under the included ITF Free Font License.
 
@@ -60,6 +60,8 @@ Upgrading from 1.5.0 or 1.5.1 resets the old build-specific Accessibility entry 
 ## Using the extension
 
 - Click a clip to copy it immediately.
+- Create a smart snippet with named fields such as `Hello {{name}}`; add an optional default with `{{company|Clipboard+}}`. Clicking the snippet asks for each unique field and shows the finished result before copying.
+- Open a clip's three-dot menu and choose **Transform & copy** to clean whitespace, format JSON, convert letter case, or remove common tracking parameters from a link. Transformations affect only the copied result, never the saved original.
 - Use the three-dot menu to favorite, edit, or delete it.
 - Use **Add clip** for manual text and URLs, or **Save tab** to store the current page.
 - Press **Control-Shift-V** to search and paste from any macOS application.

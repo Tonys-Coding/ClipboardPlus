@@ -2,6 +2,15 @@
 
 Clipboard+'s Git history was reconstructed from local development milestones after versions 1.0.0 through 1.4.2 had already been built. Those tags preserve the rollout order; their publication timestamps are intentionally not backdated. Releases from 1.5.0 onward follow the live project history.
 
+## 1.6.0
+
+- Add reusable smart snippets with `{{field}}` placeholders, optional `{{field|default}}` values, duplicate-field reuse, and a live result preview.
+- Open the fill-in workflow automatically when a snippet is selected in either the Chrome popup or native Quick Paste palette.
+- Add non-destructive paste transformations for whitespace cleanup, formatted JSON, uppercase, lowercase, title case, and tracking-parameter removal.
+- Add **Transform & copy** to Chrome clip actions and **Option-Return** transformations to the native palette.
+- Keep all snippet values and transformations local, ephemeral, and separate from the saved original.
+- Add browser, unit, and native regression coverage for snippet rendering and transformations.
+
 ## 1.5.4
 
 - Replace Syne with the Satoshi variable family throughout the Chrome popup and settings page.

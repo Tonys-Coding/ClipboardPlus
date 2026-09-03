@@ -54,6 +54,20 @@ do {
           ClipPresentation.metadata(for: presented) == ["google.com", "TEXT", "Google Chrome"] else {
         throw NSError(domain: "ClipboardPlusStoreCheck", code: 7, userInfo: [NSLocalizedDescriptionKey: "Clip presentation hierarchy failed."])
     }
+
+    let snippet = "Hi {{ First name }}, welcome to {{company|Clipboard+}}. Bye {{first name}}."
+    guard SmartPasteTools.snippetFields(in: snippet) == [
+        SnippetField(key: "first name", label: "First name", defaultValue: ""),
+        SnippetField(key: "company", label: "company", defaultValue: "Clipboard+"),
+    ], SmartPasteTools.fillSnippet(snippet, values: ["first name": "Tony"]) == "Hi Tony, welcome to Clipboard+. Bye Tony." else {
+        throw NSError(domain: "ClipboardPlusStoreCheck", code: 8, userInfo: [NSLocalizedDescriptionKey: "Smart snippet rendering failed."])
+    }
+    guard SmartPasteTools.transform("  First\t line\n\n\n Second   line ", using: .cleanWhitespace) == "First line\n\nSecond line",
+          SmartPasteTools.transform("Mixed Case", using: .uppercase) == "MIXED CASE",
+          SmartPasteTools.transform("{\"ready\":true}", using: .formatJSON)?.contains("\n") == true,
+          SmartPasteTools.transform("https://example.com/article?id=42&utm_source=email&gclid=abc#details", using: .removeTracking) == "https://example.com/article?id=42#details" else {
+        throw NSError(domain: "ClipboardPlusStoreCheck", code: 9, userInfo: [NSLocalizedDescriptionKey: "Paste transformations failed."])
+    }
     print("Clipboard+ companion store checks passed.")
 } catch {
     FileHandle.standardError.write(Data("Store check failed: \(error.localizedDescription)\n".utf8))

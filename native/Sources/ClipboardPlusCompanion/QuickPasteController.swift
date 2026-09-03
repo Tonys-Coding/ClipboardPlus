@@ -10,12 +10,17 @@ final class QuickPastePanel: NSPanel {
 @MainActor
 final class QuickPasteTableView: NSTableView {
     var onChoose: ((Bool) -> Void)?
+    var onTransform: (() -> Void)?
     var onCancel: (() -> Void)?
 
     override func keyDown(with event: NSEvent) {
         switch event.keyCode {
         case 36, 76:
-            onChoose?(event.modifierFlags.contains(.command))
+            if event.modifierFlags.contains(.option) {
+                onTransform?()
+            } else {
+                onChoose?(event.modifierFlags.contains(.command))
+            }
         case 53:
             onCancel?()
         default:
@@ -91,10 +96,11 @@ final class QuickPasteController: NSObject, NSTableViewDataSource, NSTableViewDe
     private let searchField = NSSearchField()
     private let tableView = QuickPasteTableView()
     private let emptyLabel = NSTextField(labelWithString: "No matching clips")
-    private let footerLabel = NSTextField(labelWithString: "↑↓ Select    Return Paste    ⌘Return Copy    Esc Close")
+    private let footerLabel = NSTextField(labelWithString: "↑↓ Select    Return Paste    ⌘Return Copy    ⌥Return Transform    Esc Close")
     private var allClips: [NativeClip] = []
     private var filteredClips: [NativeClip] = []
     private var targetApplication: NSRunningApplication?
+    private var pendingTransformClip: NativeClip?
 
     init(store: CompanionStore, onPasteboardWrite: @escaping () -> Void, onStatus: @escaping (String) -> Void) {
         self.store = store
@@ -171,6 +177,7 @@ final class QuickPasteController: NSObject, NSTableViewDataSource, NSTableViewDe
         tableView.target = self
         tableView.doubleAction = #selector(pasteSelected)
         tableView.onChoose = { [weak self] copyOnly in self?.chooseSelected(copyOnly: copyOnly) }
+        tableView.onTransform = { [weak self] in self?.showTransformMenu() }
         tableView.onCancel = { [weak self] in self?.close() }
         let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("clip"))
         column.resizingMask = .autoresizingMask
@@ -265,7 +272,11 @@ final class QuickPasteController: NSObject, NSTableViewDataSource, NSTableViewDe
         case #selector(NSResponder.moveUp(_:)):
             moveSelection(by: -1)
         case #selector(NSResponder.insertNewline(_:)):
-            chooseSelected(copyOnly: NSApp.currentEvent?.modifierFlags.contains(.command) == true)
+            if NSApp.currentEvent?.modifierFlags.contains(.option) == true {
+                showTransformMenu()
+            } else {
+                chooseSelected(copyOnly: NSApp.currentEvent?.modifierFlags.contains(.command) == true)
+            }
         case #selector(NSResponder.cancelOperation(_:)):
             close()
         default:
@@ -298,9 +309,81 @@ final class QuickPasteController: NSObject, NSTableViewDataSource, NSTableViewDe
         guard !filteredClips.isEmpty else { return }
         let row = tableView.selectedRow >= 0 ? tableView.selectedRow : 0
         let clip = filteredClips[row]
+        useContent(clip.content, copyOnly: copyOnly)
+    }
+
+    private func showTransformMenu() {
+        guard !filteredClips.isEmpty else { return }
+        let row = tableView.selectedRow >= 0 ? tableView.selectedRow : 0
+        let clip = filteredClips[row]
+        pendingTransformClip = clip
+
+        let menu = NSMenu(title: "Paste transformations")
+        for transformation in PasteTransformation.allCases {
+            let item = NSMenuItem(title: transformation.label, action: #selector(applyTransformation(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = transformation.rawValue
+            item.isEnabled = SmartPasteTools.transform(clip.content, using: transformation) != nil
+            menu.addItem(item)
+        }
+        let rowFrame = tableView.rect(ofRow: row)
+        menu.popUp(positioning: nil, at: NSPoint(x: rowFrame.midX, y: rowFrame.minY), in: tableView)
+    }
+
+    @objc private func applyTransformation(_ sender: NSMenuItem) {
+        guard let clip = pendingTransformClip,
+              let rawValue = sender.representedObject as? String,
+              let transformation = PasteTransformation(rawValue: rawValue),
+              let transformed = SmartPasteTools.transform(clip.content, using: transformation) else { return }
+        useContent(transformed, copyOnly: false)
+    }
+
+    private func resolveSnippet(_ content: String) -> String? {
+        let fields = SmartPasteTools.snippetFields(in: content)
+        guard !fields.isEmpty else { return content }
+
+        let alert = NSAlert()
+        alert.messageText = "Fill in the fields"
+        alert.informativeText = "Clipboard+ will replace each field before pasting."
+        alert.addButton(withTitle: "Paste snippet")
+        alert.addButton(withTitle: "Cancel")
+
+        let stack = NSStackView()
+        stack.orientation = .vertical
+        stack.alignment = .leading
+        stack.spacing = 9
+        stack.edgeInsets = NSEdgeInsets(top: 4, left: 0, bottom: 4, right: 0)
+        var inputs: [(SnippetField, NSTextField)] = []
+        for field in fields {
+            let label = NSTextField(labelWithString: field.label)
+            label.font = BrandAssets.font(size: 11, weight: .medium)
+            label.textColor = NSColor(calibratedWhite: 0.72, alpha: 1)
+            let input = NSTextField(string: field.defaultValue)
+            input.font = BrandAssets.font(size: 12)
+            input.placeholderString = field.defaultValue.isEmpty ? "Enter \(field.label)" : field.defaultValue
+            input.widthAnchor.constraint(equalToConstant: 330).isActive = true
+            stack.addArrangedSubview(label)
+            stack.addArrangedSubview(input)
+            inputs.append((field, input))
+        }
+        alert.accessoryView = stack
+
+        while alert.runModal() == .alertFirstButtonReturn {
+            let values = Dictionary(uniqueKeysWithValues: inputs.map { ($0.0.key, $0.1.stringValue) })
+            if inputs.allSatisfy({ !$0.1.stringValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) {
+                return SmartPasteTools.fillSnippet(content, values: values)
+            }
+            NSSound.beep()
+            alert.informativeText = "Complete each field before pasting."
+        }
+        return nil
+    }
+
+    private func useContent(_ content: String, copyOnly: Bool) {
+        guard let resolvedContent = resolveSnippet(content) else { return }
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
-        guard pasteboard.setString(clip.content, forType: .string) else {
+        guard pasteboard.setString(resolvedContent, forType: .string) else {
             onStatus("Quick Paste could not update the clipboard")
             return
         }

@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Clip } from '../lib/types';
-import { EditIcon, MoreIcon, StarIcon, TrashIcon } from '../components/Icons';
+import { EditIcon, MoreIcon, StarIcon, TrashIcon, WandIcon } from '../components/Icons';
+import { hasSnippetFields } from '../lib/pasteTools';
 import { TypeGlyph } from './TypeGlyph';
 
 interface ClipCardProps {
   clip: Clip;
   copied: boolean;
   onCopy: (clip: Clip) => void;
+  onTransform: (clip: Clip) => void;
   onEdit: (clip: Clip) => void;
   onFavorite: (clip: Clip) => void;
   onDelete: (clip: Clip) => void;
@@ -33,7 +35,7 @@ function relativeTime(timestamp: number): string {
   return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(timestamp);
 }
 
-export function ClipCard({ clip, copied, onCopy, onEdit, onFavorite, onDelete }: ClipCardProps) {
+export function ClipCard({ clip, copied, onCopy, onTransform, onEdit, onFavorite, onDelete }: ClipCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuDirection, setMenuDirection] = useState<'down' | 'up'>('down');
   const menuRef = useRef<HTMLDivElement>(null);
@@ -60,6 +62,7 @@ export function ClipCard({ clip, copied, onCopy, onEdit, onFavorite, onDelete }:
           <span className="clip-meta">
             {source && <span>{source}</span>}
             <span>{clip.type.toUpperCase()}</span>
+            {hasSnippetFields(clip.content) && <span className="snippet-meta">SNIPPET</span>}
             {clip.sourceApp && <span>{clip.sourceApp}</span>}
             <span>{relativeTime(clip.updatedAt)}</span>
           </span>
@@ -77,7 +80,7 @@ export function ClipCard({ clip, copied, onCopy, onEdit, onFavorite, onDelete }:
           onClick={() => {
             if (!menuOpen) {
               const trigger = triggerRef.current?.getBoundingClientRect();
-              setMenuDirection(trigger && window.innerHeight - trigger.bottom < 145 ? 'up' : 'down');
+              setMenuDirection(trigger && window.innerHeight - trigger.bottom < 185 ? 'up' : 'down');
             }
             setMenuOpen((open) => !open);
           }}
@@ -91,6 +94,9 @@ export function ClipCard({ clip, copied, onCopy, onEdit, onFavorite, onDelete }:
             </button>
             <button type="button" role="menuitem" onClick={() => { onEdit(clip); setMenuOpen(false); }}>
               <EditIcon /> Edit
+            </button>
+            <button type="button" role="menuitem" onClick={() => { onTransform(clip); setMenuOpen(false); }}>
+              <WandIcon /> Transform &amp; copy
             </button>
             <button className="danger" type="button" role="menuitem" onClick={() => { onDelete(clip); setMenuOpen(false); }}>
               <TrashIcon /> Delete

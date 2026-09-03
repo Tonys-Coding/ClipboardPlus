@@ -14,6 +14,7 @@ const state: StorageState = {
     { id: 'recent', type: 'text', content: 'Recent note', title: 'A misleading page title', sourceUrl: 'https://www.google.com/search?q=recent', sourceApp: 'Google Chrome', favorite: false, createdAt: 2, updatedAt: 2 },
     { id: 'favorite', type: 'url', content: 'https://example.com', title: 'Example home', sourceUrl: 'https://chatgpt.com/c/example', sourceApp: 'Google Chrome', favorite: true, createdAt: 1, updatedAt: 1 },
     { id: 'code', type: 'code', content: 'const answer = 42;', favorite: false, createdAt: 0, updatedAt: 0 },
+    { id: 'snippet', type: 'text', content: 'Hello {{name}}, your project is {{project|Clipboard+}}.', favorite: false, createdAt: 0, updatedAt: 0 },
   ],
 };
 
@@ -82,7 +83,7 @@ describe('Clipboard+ popup', () => {
     render(<Popup />);
     await screen.findByText('Recent note');
     await user.click(screen.getByRole('button', { name: /add clip/i }));
-    await user.type(screen.getByLabelText('Paste or type anything'), 'A new clip');
+    await user.type(screen.getByLabelText(/Paste or type anything/), 'A new clip');
     await user.click(screen.getByRole('button', { name: /save clip/i }));
     expect(mockedSend).toHaveBeenCalledWith({ type: 'ADD_CLIP', payload: { content: 'A new clip' } });
 
@@ -114,6 +115,41 @@ describe('Clipboard+ popup', () => {
     await user.click(within(recentCard).getByRole('button', { name: 'Clip actions' }));
     await user.click(screen.getByRole('menuitem', { name: 'Delete' }));
     expect(mockedSend).toHaveBeenCalledWith({ type: 'DELETE_CLIP', payload: { id: 'recent' } });
+  });
+
+  it('fills smart snippet fields before copying the rendered result', async () => {
+    const user = userEvent.setup();
+    const clipboardWrite = vi.spyOn(navigator.clipboard, 'writeText');
+    render(<Popup />);
+    await screen.findByText('Hello {{name}}, your project is {{project|Clipboard+}}.');
+
+    await user.click(screen.getByRole('button', { name: /copy hello \{\{name\}\}/i }));
+    expect(screen.getByRole('dialog', { name: 'Fill in the fields' })).toBeInTheDocument();
+    expect(screen.getByLabelText('project')).toHaveValue('Clipboard+');
+    await user.type(screen.getByLabelText('name'), 'Tony');
+    await user.click(screen.getByRole('button', { name: 'Copy snippet' }));
+
+    expect(clipboardWrite).toHaveBeenCalledWith('Hello Tony, your project is Clipboard+.');
+    expect(await screen.findByText('Snippet copied')).toBeInTheDocument();
+  });
+
+  it('previews and copies a transformation without changing the saved clip', async () => {
+    const user = userEvent.setup();
+    const clipboardWrite = vi.spyOn(navigator.clipboard, 'writeText');
+    render(<Popup />);
+    await screen.findByText('Recent note');
+    const recentCard = screen.getByText('Recent note').closest('article')!;
+
+    await user.click(within(recentCard).getByRole('button', { name: 'Clip actions' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Transform & copy' }));
+    expect(screen.getByRole('dialog', { name: 'Transform and copy' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /uppercase/i }));
+    expect(screen.getByLabelText('Transformation preview')).toHaveTextContent('RECENT NOTE');
+    await user.click(screen.getByRole('button', { name: 'Copy result' }));
+
+    expect(clipboardWrite).toHaveBeenCalledWith('RECENT NOTE');
+    expect(screen.getByText('Recent note')).toBeInTheDocument();
+    expect(await screen.findByText('Transformed copy ready')).toBeInTheDocument();
   });
 
   it('keeps action menus above other clips and flips them upward near the popup edge', async () => {

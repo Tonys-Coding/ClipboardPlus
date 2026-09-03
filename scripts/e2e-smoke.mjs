@@ -83,10 +83,31 @@ try {
   await page.bringToFront();
   await extensionPage.reload();
   await extensionPage.getByRole('textbox', { name: 'Search clips' }).waitFor({ timeout: 10_000 });
+
+  await extensionPage.getByRole('button', { name: /add clip/i }).click();
+  await extensionPage.getByLabel(/Paste or type anything/).fill('Hello {{name|friend}}');
+  await extensionPage.getByRole('button', { name: /save clip/i }).click();
+  const snippetRow = extensionPage.locator('article').filter({ hasText: 'Hello {{name|friend}}' });
+  await snippetRow.getByRole('button', { name: /copy hello/i }).click();
+  await extensionPage.getByRole('dialog', { name: 'Fill in the fields' }).waitFor();
+  await extensionPage.getByRole('textbox', { name: 'name' }).fill('Tony');
+  await extensionPage.getByRole('button', { name: 'Copy snippet' }).click();
+  await extensionPage.getByText('Snippet copied').waitFor();
+
+  const transformRow = extensionPage.locator('article').filter({ hasText: 'Copied with Command C' });
+  await transformRow.getByRole('button', { name: 'Clip actions' }).click();
+  await extensionPage.getByRole('menuitem', { name: 'Transform & copy' }).click();
+  await extensionPage.getByRole('button', { name: /uppercase/i }).click();
+  if (await extensionPage.getByLabel('Transformation preview').textContent() !== 'COPIED WITH COMMAND C') {
+    throw new Error('The transformation preview did not update.');
+  }
+  await extensionPage.getByRole('button', { name: 'Copy result' }).click();
+  await extensionPage.getByText('Transformed copy ready').waitFor();
+
   const nativeResult = await extensionPage.evaluate(() => chrome.runtime.sendMessage({ type: 'SYNC_COMPANION' }));
   const nativeMessaging = nativeResult.companion?.available ? 'connected' : 'Chrome for Testing does not read user-level native hosts';
 
-  console.log(JSON.stringify({ extensionId, captured: contents, codeClassified: true, passwordExcluded: true, popupDiagnostic: 'ready', typography: popupTypography.family, nativeMessaging }, null, 2));
+  console.log(JSON.stringify({ extensionId, captured: contents, codeClassified: true, passwordExcluded: true, popupDiagnostic: 'ready', smartSnippets: true, pasteTransformations: true, typography: popupTypography.family, nativeMessaging }, null, 2));
 } finally {
   await context?.close();
   await new Promise((resolveClosed) => server.close(resolveClosed));

@@ -1,9 +1,11 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CheckIcon, ClipboardIcon, LinkIcon, PlusIcon, SearchIcon, SettingsIcon, StarIcon, XIcon } from '../components/Icons';
 import { filterClips, STORAGE_KEY } from '../lib/clips';
+import { hasSnippetFields } from '../lib/pasteTools';
 import { sendMessage } from '../lib/runtime';
 import type { Clip, StorageState } from '../lib/types';
 import { ClipCard } from './ClipCard';
+import { SnippetDialog, TransformDialog } from './SmartPasteDialogs';
 import { TypeGlyph } from './TypeGlyph';
 import './popup.css';
 
@@ -19,6 +21,8 @@ export function Popup() {
   const [draft, setDraft] = useState('');
   const [editing, setEditing] = useState<Clip | null>(null);
   const [editDraft, setEditDraft] = useState('');
+  const [snippetRequest, setSnippetRequest] = useState<{ clip: Clip; template: string } | null>(null);
+  const [transforming, setTransforming] = useState<Clip | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [toast, setToast] = useState<Toast>(null);
   const [captureStatus, setCaptureStatus] = useState<CaptureStatus>('checking');
@@ -112,14 +116,34 @@ export function Popup() {
   const favorites = visible.filter((clip) => clip.favorite);
   const history = visible.filter((clip) => !clip.favorite);
 
-  const handleCopy = async (clip: Clip) => {
+  const copyText = async (content: string, clip: Clip, successMessage?: string): Promise<boolean> => {
     try {
-      await navigator.clipboard.writeText(clip.content);
+      await navigator.clipboard.writeText(content);
       setCopiedId(clip.id);
+      if (successMessage) setToast({ kind: 'success', message: successMessage });
       window.setTimeout(() => setCopiedId((id) => (id === clip.id ? null : id)), 1400);
+      return true;
     } catch {
       setToast({ kind: 'error', message: 'Clipboard access was blocked. Try clicking again.' });
+      return false;
     }
+  };
+
+  const handleCopy = (clip: Clip) => {
+    if (hasSnippetFields(clip.content)) {
+      setSnippetRequest({ clip, template: clip.content });
+      return;
+    }
+    void copyText(clip.content, clip);
+  };
+
+  const useTransformedResult = (content: string, clip: Clip) => {
+    setTransforming(null);
+    if (hasSnippetFields(content)) {
+      setSnippetRequest({ clip, template: content });
+      return;
+    }
+    void copyText(content, clip, 'Transformed copy ready');
   };
 
   const handleAdd = async (event: FormEvent) => {
@@ -161,6 +185,7 @@ export function Popup() {
               clip={clip}
               copied={copiedId === clip.id}
               onCopy={handleCopy}
+              onTransform={setTransforming}
               onEdit={(item) => { setEditing(item); setEditDraft(item.content); }}
               onFavorite={(item) => void perform({ type: 'TOGGLE_FAVORITE', payload: { id: item.id } })}
               onDelete={(item) => void perform({ type: 'DELETE_CLIP', payload: { id: item.id } }, 'Clip deleted')}
@@ -195,8 +220,8 @@ export function Popup() {
 
       {addOpen && (
         <form className="add-panel" onSubmit={handleAdd}>
-          <label htmlFor="new-clip">Paste or type anything</label>
-          <textarea id="new-clip" ref={addInput} value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Text or https://example.com" maxLength={50_000} required />
+          <label htmlFor="new-clip">Paste or type anything — use {'{{name}}'} for fill-in fields</label>
+          <textarea id="new-clip" ref={addInput} value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Text, URL, or Hello {{name}}" maxLength={50_000} required />
           <div className="form-actions"><button type="button" className="text-button" onClick={() => setAddOpen(false)}>Cancel</button><button type="submit" className="primary-button" disabled={!draft.trim()}><PlusIcon /> Save clip</button></div>
         </form>
       )}
@@ -237,6 +262,25 @@ export function Popup() {
             <div className="form-actions"><button type="button" className="text-button" onClick={() => setEditing(null)}>Cancel</button><button type="submit" className="primary-button" disabled={!editDraft.trim()}><CheckIcon /> Save changes</button></div>
           </form>
         </div>
+      )}
+
+      {snippetRequest && (
+        <SnippetDialog
+          key={`${snippetRequest.clip.id}:${snippetRequest.template}`}
+          clip={snippetRequest.clip}
+          template={snippetRequest.template}
+          onClose={() => setSnippetRequest(null)}
+          onCopy={(content, clip) => copyText(content, clip, 'Snippet copied')}
+        />
+      )}
+
+      {transforming && (
+        <TransformDialog
+          key={transforming.id}
+          clip={transforming}
+          onClose={() => setTransforming(null)}
+          onUseResult={useTransformedResult}
+        />
       )}
 
       {toast && <div className={`toast ${toast.kind}`} role="status">{toast.kind === 'success' ? <CheckIcon /> : <span>!</span>}{toast.message}</div>}
