@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { sendMessage } from '../lib/runtime';
@@ -76,5 +76,21 @@ describe('Options', () => {
       type: 'UPDATE_SETTINGS',
       payload: expect.objectContaining({ autoCapture: true }),
     }));
+  });
+
+  it('moves the top spotlight and renders the supplied side artwork', async () => {
+    const { container } = render(<Options />);
+    await screen.findByText('Automatic web capture');
+
+    expect(container.querySelectorAll('img[src="/assets/clipboard-plus-single.png"]')).toHaveLength(6);
+    const pointerMove = new Event('pointermove');
+    Object.defineProperties(pointerMove, {
+      clientX: { value: 320 },
+      clientY: { value: 480 },
+      pointerType: { value: 'mouse' },
+    });
+    fireEvent(window, pointerMove);
+    expect(document.documentElement.style.getPropertyValue('--spotlight-x')).toBe('320px');
+    expect(document.documentElement.style.getPropertyValue('--spotlight-y')).toBe('480px');
   });
 });

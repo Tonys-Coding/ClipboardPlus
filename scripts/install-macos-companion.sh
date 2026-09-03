@@ -188,4 +188,4 @@ if [[ "$accessibility_reset" == true ]]; then
   echo "Accessibility access was reset once to replace the old per-build identity."
   echo "Double-click a Quick Paste result, then enable the new ClipboardPlus entry when macOS asks."
 fi
-echo "Reload Clipboard+ 1.6.2 in chrome://extensions to activate Native Messaging."
+echo "Reload Clipboard+ 1.6.3 in chrome://extensions to activate Native Messaging."

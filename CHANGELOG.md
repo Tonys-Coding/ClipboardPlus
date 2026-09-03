@@ -2,6 +2,13 @@
 
 Clipboard+'s Git history was reconstructed from local development milestones after versions 1.0.0 through 1.4.2 had already been built. Those tags preserve the rollout order; their publication timestamps are intentionally not backdated. Releases from 1.5.0 onward follow the live project history.
 
+## 1.6.3
+
+- Add an interactive top-mounted spotlight that follows pointer movement across the Capture Controls page.
+- Replace the abstract side cards with the supplied individual Clipboard+ artwork, arranged as independently floating objects.
+- Preserve a quiet center workspace, hide the side objects when space is limited, and disable their motion when reduced motion is requested.
+- Add regression coverage for spotlight movement and the supplied artwork.
+
 ## 1.6.2
 
 - Frame the Capture Controls page with responsive Clipboard+-themed side artwork on wide displays.

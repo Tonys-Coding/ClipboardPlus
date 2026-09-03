@@ -21,7 +21,7 @@ Everything included through v1.6 is a permanent free core. Future paid services,
 - Category: Productivity
 - Primary language: English
 - Mature content: No
-- Contains paid functionality: No for v1.6.2
+- Contains paid functionality: No for v1.6.3
 - Initial visibility: Unlisted
 
 ## URLs

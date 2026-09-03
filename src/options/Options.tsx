@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { CheckIcon, ClipboardIcon, LinkIcon, PlusIcon, TrashIcon, XIcon } from '../components/Icons';
+import { CheckIcon, PlusIcon, TrashIcon, XIcon } from '../components/Icons';
 import { CAPTURE_CONSENT_VERSION, normalizeHostname } from '../lib/clips';
 import { COMPANION_ENABLED } from '../lib/build';
 import { removeWebsiteAccess, requestWebsiteAccess } from '../lib/capturePermissions';
@@ -21,6 +21,24 @@ export function Options() {
       setCompanionOnline(Boolean(response.companion?.available));
       setWebsiteAccess(Boolean(response.permissions?.websiteAccess));
     }).catch((reason: Error) => setError(reason.message));
+  }, []);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+
+    const moveSpotlight = (event: PointerEvent) => {
+      if (reducedMotion?.matches || event.pointerType === 'touch') return;
+      root.style.setProperty('--spotlight-x', `${event.clientX}px`);
+      root.style.setProperty('--spotlight-y', `${Math.max(170, Math.min(event.clientY, window.innerHeight - 90))}px`);
+    };
+
+    window.addEventListener('pointermove', moveSpotlight, { passive: true });
+    return () => {
+      window.removeEventListener('pointermove', moveSpotlight);
+      root.style.removeProperty('--spotlight-x');
+      root.style.removeProperty('--spotlight-y');
+    };
   }, []);
 
   const update = async (changes: Partial<Settings>) => {
@@ -100,23 +118,24 @@ export function Options() {
 
   return (
     <main className="options-shell">
-      <aside className="ambient-art ambient-left" aria-hidden="true">
-        <span className="ambient-orbit" />
-        <img src="/icons/clipboard-plus-logo.png" alt="" />
-        <span className="ambient-card ambient-card-text"><ClipboardIcon /></span>
-        <span className="ambient-card ambient-card-link"><LinkIcon /></span>
-        <span className="ambient-card ambient-card-code">&lt;/&gt;</span>
-        <span className="ambient-node ambient-node-one" />
-        <span className="ambient-node ambient-node-two" />
+      <div className="spotlight-stage" aria-hidden="true">
+        <span className="spotlight-fixture" />
+        <span className="spotlight-beam" />
+        <span className="spotlight-pool" />
+      </div>
+      <aside className="floating-clipboards floating-left" aria-hidden="true">
+        <img className="floating-clipboard clipboard-one" src="/assets/clipboard-plus-single.png" alt="" />
+        <img className="floating-clipboard clipboard-two" src="/assets/clipboard-plus-single.png" alt="" />
+        <img className="floating-clipboard clipboard-three" src="/assets/clipboard-plus-single.png" alt="" />
+        <span className="clipboard-trail trail-one" />
+        <span className="clipboard-trail trail-two" />
       </aside>
-      <aside className="ambient-art ambient-right" aria-hidden="true">
-        <span className="ambient-orbit" />
-        <img src="/icons/clipboard-plus-logo.png" alt="" />
-        <span className="ambient-card ambient-card-text"><ClipboardIcon /></span>
-        <span className="ambient-card ambient-card-link"><LinkIcon /></span>
-        <span className="ambient-card ambient-card-code">&lt;/&gt;</span>
-        <span className="ambient-node ambient-node-one" />
-        <span className="ambient-node ambient-node-two" />
+      <aside className="floating-clipboards floating-right" aria-hidden="true">
+        <img className="floating-clipboard clipboard-one" src="/assets/clipboard-plus-single.png" alt="" />
+        <img className="floating-clipboard clipboard-two" src="/assets/clipboard-plus-single.png" alt="" />
+        <img className="floating-clipboard clipboard-three" src="/assets/clipboard-plus-single.png" alt="" />
+        <span className="clipboard-trail trail-one" />
+        <span className="clipboard-trail trail-two" />
       </aside>
       <header className="options-header">
         <img className="options-logo" src="/icons/clipboard-plus-logo.png" alt="Clipboard+ logo" />
