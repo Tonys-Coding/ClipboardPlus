@@ -12,6 +12,14 @@ if CommandLine.arguments.contains("--check-accessibility") || CommandLine.argume
     exit(trusted ? 0 : 2)
 }
 
+if CommandLine.arguments.contains("--check-brand-assets") {
+    BrandAssets.registerFont()
+    let fontReady = BrandAssets.fontRegistered && BrandAssets.font(size: 12).fontName == "Syne-Regular"
+    let logoReady = BrandAssets.logo != nil
+    print("font=\(fontReady ? "Syne" : "missing") logo=\(logoReady ? "ready" : "missing")")
+    exit(fontReady && logoReady ? 0 : 3)
+}
+
 @MainActor
 final class ClipboardMonitor {
     private let pasteboard = NSPasteboard.general
@@ -77,6 +85,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         do {
+            BrandAssets.registerFont()
             store = try CompanionStore()
             monitor = ClipboardMonitor(store: store)
             monitor.onCapture = { [weak self] clip in self?.didCapture(clip) }

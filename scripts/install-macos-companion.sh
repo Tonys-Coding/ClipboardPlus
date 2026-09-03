@@ -97,14 +97,19 @@ binary_dir=$(swift build -c release --package-path "$package_dir" --show-bin-pat
 app_staging=$(/usr/bin/mktemp -d /tmp/clipboardplus-app.XXXXXX)
 staged_app="$app_staging/ClipboardPlus.app"
 staged_companion="$staged_app/Contents/MacOS/ClipboardPlusCompanion"
+staged_resources="$staged_app/Contents/Resources"
 
 /usr/bin/install -d -m 700 "$install_dir"
 /usr/bin/install -d -m 755 "$staged_app/Contents/MacOS"
+/usr/bin/install -d -m 755 "$staged_resources"
 /usr/bin/install -d -m 755 "$launch_agents_dir"
 /usr/bin/install -m 755 "$binary_dir/ClipboardPlusCompanion" "$staged_companion"
 /usr/bin/install -m 644 "$package_dir/Installer/Info.plist.template" "$staged_app/Contents/Info.plist"
+/usr/bin/install -m 644 "$project_dir/public/fonts/Syne-Variable.woff2" "$staged_resources/Syne-Variable.woff2"
+/usr/bin/install -m 644 "$project_dir/public/icons/clipboard-plus-logo.png" "$staged_resources/ClipboardPlusLogo.png"
 /usr/bin/codesign --force --deep --sign "$signing_hash" "$staged_app"
 /usr/bin/codesign --verify --deep --strict "$staged_app"
+"$staged_companion" --check-brand-assets >/dev/null
 current_requirement=$(/usr/bin/codesign -d -r- "$staged_app" 2>&1 \
   | /usr/bin/awk '/designated =>/ { sub(/^# /, ""); print; exit }')
 /usr/bin/security list-keychains -d user -s "${existing_keychains[@]}" >/dev/null
@@ -183,4 +188,4 @@ if [[ "$accessibility_reset" == true ]]; then
   echo "Accessibility access was reset once to replace the old per-build identity."
   echo "Double-click a Quick Paste result, then enable the new ClipboardPlus entry when macOS asks."
 fi
-echo "Reload Clipboard+ 1.5.2 in chrome://extensions to activate Native Messaging."
+echo "Reload Clipboard+ 1.5.3 in chrome://extensions to activate Native Messaging."

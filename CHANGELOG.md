@@ -2,6 +2,13 @@
 
 Clipboard+'s Git history was reconstructed from local development milestones after versions 1.0.0 through 1.4.2 had already been built. Those tags preserve the rollout order; their publication timestamps are intentionally not backdated. Releases from 1.5.0 onward follow the live project history.
 
+## 1.5.3
+
+- Replace the Chrome popup's tall bordered cards and capture rail with compact, flat Quick Paste-style rows.
+- Reduce oversized controls and spacing while retaining the popup's larger history capacity.
+- Bring the official Clipboard+ logo and bundled Syne variable font into the native Quick Paste window.
+- Package and verify native brand assets during companion installation.
+
 ## 1.5.2
 
 - Sign the macOS companion with a persistent, device-local identity instead of a build-specific ad-hoc identity.

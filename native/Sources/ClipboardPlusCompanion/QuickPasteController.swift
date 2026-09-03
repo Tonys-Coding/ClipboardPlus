@@ -39,11 +39,11 @@ final class ClipRowView: NSTableCellView {
         kindImage.translatesAutoresizingMaskIntoConstraints = false
         kindImage.contentTintColor = NSColor(calibratedRed: 0.91, green: 0.73, blue: 0.18, alpha: 1)
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.font = .systemFont(ofSize: 14, weight: .bold)
+        titleLabel.font = BrandAssets.font(size: 14, weight: .bold)
         titleLabel.textColor = NSColor(calibratedWhite: 0.94, alpha: 1)
         titleLabel.lineBreakMode = .byTruncatingTail
         detailLabel.translatesAutoresizingMaskIntoConstraints = false
-        detailLabel.font = .systemFont(ofSize: 11)
+        detailLabel.font = BrandAssets.font(size: 11)
         detailLabel.textColor = NSColor(calibratedWhite: 0.58, alpha: 1)
         detailLabel.lineBreakMode = .byTruncatingTail
         favoriteImage.translatesAutoresizingMaskIntoConstraints = false
@@ -125,13 +125,34 @@ final class QuickPasteController: NSObject, NSTableViewDataSource, NSTableViewDe
         contentView.wantsLayer = true
         contentView.layer?.backgroundColor = NSColor(calibratedWhite: 0.045, alpha: 1).cgColor
 
-        let title = NSTextField(labelWithString: "Clipboard+")
+        let logoView = NSImageView()
+        logoView.translatesAutoresizingMaskIntoConstraints = false
+        logoView.image = BrandAssets.logo
+        logoView.imageScaling = .scaleProportionallyUpOrDown
+
+        let title = NSTextField(labelWithString: "")
         title.translatesAutoresizingMaskIntoConstraints = false
-        title.font = .systemFont(ofSize: 22, weight: .bold)
-        title.textColor = NSColor(calibratedWhite: 0.96, alpha: 1)
+        title.attributedStringValue = {
+            let value = NSMutableAttributedString(
+                string: "Clipboard",
+                attributes: [
+                    .font: BrandAssets.font(size: 22, weight: .bold),
+                    .foregroundColor: NSColor(calibratedWhite: 0.96, alpha: 1),
+                ]
+            )
+            value.append(NSAttributedString(
+                string: "+",
+                attributes: [
+                    .font: BrandAssets.font(size: 22, weight: .extraBold),
+                    .foregroundColor: NSColor(calibratedRed: 0.95, green: 0.78, blue: 0.23, alpha: 1),
+                ]
+            ))
+            return value
+        }()
 
         searchField.translatesAutoresizingMaskIntoConstraints = false
         searchField.placeholderString = "Search clips, apps, or websites"
+        searchField.font = BrandAssets.font(size: 13)
         searchField.delegate = self
         searchField.focusRingType = .none
         searchField.controlSize = .large
@@ -157,25 +178,30 @@ final class QuickPasteController: NSObject, NSTableViewDataSource, NSTableViewDe
         scrollView.documentView = tableView
 
         emptyLabel.translatesAutoresizingMaskIntoConstraints = false
-        emptyLabel.font = .systemFont(ofSize: 13)
+        emptyLabel.font = BrandAssets.font(size: 13, weight: .medium)
         emptyLabel.textColor = NSColor(calibratedWhite: 0.55, alpha: 1)
         emptyLabel.alignment = .center
         emptyLabel.isHidden = true
 
         footerLabel.translatesAutoresizingMaskIntoConstraints = false
-        footerLabel.font = .monospacedSystemFont(ofSize: 10, weight: .medium)
+        footerLabel.font = BrandAssets.font(size: 10, weight: .medium)
         footerLabel.textColor = NSColor(calibratedWhite: 0.48, alpha: 1)
         footerLabel.alignment = .center
 
+        contentView.addSubview(logoView)
         contentView.addSubview(title)
         contentView.addSubview(searchField)
         contentView.addSubview(scrollView)
         contentView.addSubview(emptyLabel)
         contentView.addSubview(footerLabel)
         NSLayoutConstraint.activate([
-            title.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 26),
-            title.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 24),
-            searchField.topAnchor.constraint(equalTo: title.bottomAnchor, constant: 18),
+            logoView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 20),
+            logoView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 24),
+            logoView.widthAnchor.constraint(equalToConstant: 42),
+            logoView.heightAnchor.constraint(equalToConstant: 42),
+            title.leadingAnchor.constraint(equalTo: logoView.trailingAnchor, constant: 10),
+            title.centerYAnchor.constraint(equalTo: logoView.centerYAnchor),
+            searchField.topAnchor.constraint(equalTo: logoView.bottomAnchor, constant: 12),
             searchField.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 24),
             searchField.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -24),
             searchField.heightAnchor.constraint(equalToConstant: 42),
