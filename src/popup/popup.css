@@ -115,6 +115,7 @@ textarea::placeholder { color: #6f6b64; }
 .clip-list { position: relative; display: flex; flex-direction: column; gap: 8px; }
 .clip-list::before { content: ""; position: absolute; z-index: 0; left: 26px; top: -9px; bottom: -9px; width: 1px; background: linear-gradient(transparent, #514724 9%, #514724 91%, transparent); }
 .clip-card { min-height: 74px; position: relative; display: flex; align-items: stretch; overflow: visible; border: 1px solid #2d2c28; border-radius: 5px; background: linear-gradient(100deg, #151513, #191918); transition: border-color .15s, transform .15s, background .15s; animation: clip-enter .24s ease-out both; }
+.clip-card.menu-open { z-index: 20; }
 .clip-card::before { content: ""; position: absolute; z-index: 1; left: -1px; top: -1px; bottom: -1px; width: 3px; background: var(--brass); opacity: 0; transition: opacity .15s; }
 .clip-card:hover { border-color: #5d512a; background: #1e1d19; transform: translateX(3px); }
 .clip-card:hover::before, .clip-card.is-copied::before { opacity: 1; }
@@ -137,6 +138,7 @@ textarea::placeholder { color: #6f6b64; }
 .menu-trigger { width: 31px; height: 31px; }
 .menu-trigger svg { width: 16px; }
 .clip-menu { position: absolute; z-index: 10; top: 34px; right: 0; width: 182px; padding: 6px; border: 1px solid #3b3933; border-radius: 5px; background: #22211e; box-shadow: 0 16px 34px rgba(0, 0, 0, .55); }
+.clip-menu.open-up { top: auto; bottom: 34px; }
 .clip-menu button { width: 100%; height: 35px; display: flex; align-items: center; gap: 9px; padding: 0 10px; border: 0; border-radius: 3px; color: #ded9cf; background: transparent; cursor: pointer; font-size: 10px; text-align: left; }
 .clip-menu button:hover { color: #fff; background: #34322c; }
 .clip-menu button.danger { color: var(--danger); }

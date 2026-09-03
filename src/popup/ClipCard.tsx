@@ -34,7 +34,9 @@ function relativeTime(timestamp: number): string {
 
 export function ClipCard({ clip, copied, onCopy, onEdit, onFavorite, onDelete }: ClipCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuDirection, setMenuDirection] = useState<'down' | 'up'>('down');
   const menuRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -46,7 +48,7 @@ export function ClipCard({ clip, copied, onCopy, onEdit, onFavorite, onDelete }:
   }, [menuOpen]);
 
   return (
-    <article className={`clip-card ${clip.type} ${copied ? 'is-copied' : ''}`}>
+    <article className={`clip-card ${clip.type} ${copied ? 'is-copied' : ''} ${menuOpen ? 'menu-open' : ''}`}>
       <button className="clip-copy" type="button" onClick={() => onCopy(clip)} aria-label={`Copy ${clip.title || clip.content}`}>
         <span className={`type-icon ${clip.type}`} title={`${clip.type[0].toUpperCase()}${clip.type.slice(1)} clip`}>
           <TypeGlyph type={clip.type} />
@@ -65,16 +67,23 @@ export function ClipCard({ clip, copied, onCopy, onEdit, onFavorite, onDelete }:
       {clip.favorite && <StarIcon className="favorite-indicator" fill="currentColor" />}
       <div className="clip-menu-wrap" ref={menuRef}>
         <button
+          ref={triggerRef}
           className="icon-button menu-trigger"
           type="button"
           aria-label="Clip actions"
           aria-expanded={menuOpen}
-          onClick={() => setMenuOpen((open) => !open)}
+          onClick={() => {
+            if (!menuOpen) {
+              const trigger = triggerRef.current?.getBoundingClientRect();
+              setMenuDirection(trigger && window.innerHeight - trigger.bottom < 145 ? 'up' : 'down');
+            }
+            setMenuOpen((open) => !open);
+          }}
         >
           <MoreIcon />
         </button>
         {menuOpen && (
-          <div className="clip-menu" role="menu">
+          <div className={`clip-menu open-${menuDirection}`} role="menu">
             <button type="button" role="menuitem" onClick={() => { onFavorite(clip); setMenuOpen(false); }}>
               <StarIcon fill={clip.favorite ? 'currentColor' : 'none'} /> {clip.favorite ? 'Remove favorite' : 'Add to favorites'}
             </button>

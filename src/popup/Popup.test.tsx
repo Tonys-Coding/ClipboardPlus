@@ -102,4 +102,18 @@ describe('Clipboard+ popup', () => {
     expect(mockedSend).toHaveBeenCalledWith({ type: 'DELETE_CLIP', payload: { id: 'recent' } });
   });
 
+  it('keeps action menus above other clips and flips them upward near the popup edge', async () => {
+    const user = userEvent.setup();
+    render(<Popup />);
+    await screen.findByText('Recent note');
+    const recentCard = screen.getByText('Recent note').closest('article')!;
+    const trigger = within(recentCard).getByRole('button', { name: 'Clip actions' });
+    vi.spyOn(trigger, 'getBoundingClientRect').mockReturnValue(new DOMRect(450, 520, 31, 31));
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 600 });
+
+    await user.click(trigger);
+
+    expect(recentCard).toHaveClass('menu-open');
+    expect(screen.getByRole('menu')).toHaveClass('open-up');
+  });
 });

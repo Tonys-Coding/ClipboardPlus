@@ -11,6 +11,7 @@ const server = createServer((_request, response) => {
   response.end(`<!doctype html><html><head><title>Clipboard test page</title></head><body>
     <p id="keyboard-copy">Copied with Command C</p>
     <p id="menu-copy">Copied through the copy event</p>
+    <pre id="code-copy">const captured = clips.map((clip) =&gt; clip.content);</pre>
     <input id="password" type="password" value="Never store this password">
   </body></html>`);
 });
@@ -45,6 +46,9 @@ try {
   await page.locator('#menu-copy').selectText();
   await page.evaluate(() => document.execCommand('copy'));
 
+  await page.locator('#code-copy').selectText();
+  await page.keyboard.press(process.platform === 'darwin' ? 'Meta+C' : 'Control+C');
+
   await page.locator('#password').selectText();
   await page.keyboard.press(process.platform === 'darwin' ? 'Meta+C' : 'Control+C');
 
@@ -52,7 +56,7 @@ try {
   await extensionPage.goto(`chrome-extension://${extensionId}/popup.html`);
   await extensionPage.waitForFunction(async () => {
     const stored = await chrome.storage.local.get('clipboardPlus');
-    return stored.clipboardPlus?.clips?.length >= 2;
+    return stored.clipboardPlus?.clips?.length >= 3;
   }, null, { timeout: 10_000 });
 
   const result = await extensionPage.evaluate(async () => {
@@ -63,13 +67,17 @@ try {
 
   if (!contents.includes('Copied with Command C')) throw new Error('Command+C was not persisted.');
   if (!contents.includes('Copied through the copy event')) throw new Error('The copy event was not persisted.');
+  if (result.clips.find((clip) => clip.content.startsWith('const captured'))?.type !== 'code') throw new Error('Copied code was not classified as code.');
   if (contents.includes('Never store this password')) throw new Error('A password value was incorrectly persisted.');
   if (pageErrors.length) throw new Error(`Page errors: ${pageErrors.join('; ')}`);
 
   await page.bringToFront();
   await extensionPage.reload();
   await extensionPage.getByRole('textbox', { name: 'Search clips' }).waitFor({ timeout: 10_000 });
-  console.log(JSON.stringify({ extensionId, captured: contents, passwordExcluded: true, popupDiagnostic: 'ready' }, null, 2));
+  const nativeResult = await extensionPage.evaluate(() => chrome.runtime.sendMessage({ type: 'SYNC_COMPANION' }));
+  const nativeMessaging = nativeResult.companion?.available ? 'connected' : 'Chrome for Testing does not read user-level native hosts';
+
+  console.log(JSON.stringify({ extensionId, captured: contents, codeClassified: true, passwordExcluded: true, popupDiagnostic: 'ready', nativeMessaging }, null, 2));
 } finally {
   await context?.close();
   await new Promise((resolveClosed) => server.close(resolveClosed));
