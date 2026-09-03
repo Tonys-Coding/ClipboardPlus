@@ -1,4 +1,4 @@
-export type ClipType = 'text' | 'url';
+export type ClipType = 'text' | 'url' | 'code';
 
 export interface Clip {
   id: string;
@@ -19,7 +19,7 @@ export interface Settings {
 }
 
 export interface StorageState {
-  version: 1;
+  version: 2;
   clips: Clip[];
   settings: Settings;
 }

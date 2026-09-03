@@ -1,46 +1,91 @@
 import { useEffect, useRef, useState } from 'react';
-import { EditIcon, LinkIcon, MoreIcon, StarIcon, TrashIcon, ClipboardIcon } from '../components/Icons';
 import type { Clip } from '../lib/types';
+import { EditIcon, MoreIcon, StarIcon, TrashIcon } from '../components/Icons';
+import { TypeGlyph } from './TypeGlyph';
 
-interface Props {
-  clip: Clip; copied: boolean; onCopy: (clip: Clip) => void; onEdit: (clip: Clip) => void;
-  onFavorite: (clip: Clip) => void; onDelete: (clip: Clip) => void;
+interface ClipCardProps {
+  clip: Clip;
+  copied: boolean;
+  onCopy: (clip: Clip) => void;
+  onEdit: (clip: Clip) => void;
+  onFavorite: (clip: Clip) => void;
+  onDelete: (clip: Clip) => void;
+}
+
+function urlHost(content: string): string {
+  try {
+    return new URL(content).hostname.replace(/^www\./, '');
+  } catch {
+    return content;
+  }
 }
 
 function relativeTime(timestamp: number): string {
-  const minutes = Math.floor(Math.max(0, Date.now() - timestamp) / 60_000);
-  if (minutes < 1) return 'Just now';
+  const seconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
+  if (seconds < 45) return 'Just now';
+  const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes} min${minutes === 1 ? '' : 's'} ago`;
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
   const days = Math.floor(hours / 24);
-  return `${days} day${days === 1 ? '' : 's'} ago`;
+  if (days < 7) return `${days} day${days === 1 ? '' : 's'} ago`;
+  return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(timestamp);
 }
 
-export function ClipCard({ clip, copied, onCopy, onEdit, onFavorite, onDelete }: Props) {
-  const [open, setOpen] = useState(false);
+export function ClipCard({ clip, copied, onCopy, onEdit, onFavorite, onDelete }: ClipCardProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    if (!open) return;
-    const close = (event: MouseEvent) => { if (!menuRef.current?.contains(event.target as Node)) setOpen(false); };
+    if (!menuOpen) return;
+    const close = (event: MouseEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) setMenuOpen(false);
+    };
     document.addEventListener('mousedown', close);
     return () => document.removeEventListener('mousedown', close);
-  }, [open]);
+  }, [menuOpen]);
+
   return (
-    <article className="clip-card">
+    <article className={`clip-card ${clip.type} ${copied ? 'is-copied' : ''}`}>
       <button className="clip-copy" type="button" onClick={() => onCopy(clip)} aria-label={`Copy ${clip.title || clip.content}`}>
-        <span className={`type-icon ${clip.type}`}>{clip.type === 'url' ? <LinkIcon /> : <ClipboardIcon />}</span>
-        <span className="clip-details">{clip.title && <strong>{clip.title}</strong>}<span className="clip-content">{clip.content}</span><span className="clip-meta"><span>{relativeTime(clip.updatedAt)}</span>{clip.sourceApp && <span>{clip.sourceApp}</span>}</span></span>
+        <span className={`type-icon ${clip.type}`} title={`${clip.type[0].toUpperCase()}${clip.type.slice(1)} clip`}>
+          <TypeGlyph type={clip.type} />
+        </span>
+        <span className="clip-details">
+          {clip.type === 'url' && <strong>{clip.title || urlHost(clip.content)}</strong>}
+          <span className="clip-content">{clip.content}</span>
+          <span className="clip-meta">
+            <span>{relativeTime(clip.updatedAt)}</span>
+            {clip.type === 'url' && <span>{urlHost(clip.content)}</span>}
+            {clip.sourceApp && <span>{clip.sourceApp}</span>}
+          </span>
+        </span>
         {copied && <span className="copied-label">Copied</span>}
       </button>
       {clip.favorite && <StarIcon className="favorite-indicator" fill="currentColor" />}
       <div className="clip-menu-wrap" ref={menuRef}>
-        <button className="icon-button menu-trigger" type="button" aria-label="Clip actions" onClick={() => setOpen((value) => !value)}><MoreIcon /></button>
-        {open && <div className="clip-menu" role="menu">
-          <button type="button" role="menuitem" onClick={() => { onFavorite(clip); setOpen(false); }}><StarIcon />{clip.favorite ? 'Remove favorite' : 'Add to favorites'}</button>
-          <button type="button" role="menuitem" onClick={() => { onEdit(clip); setOpen(false); }}><EditIcon />Edit</button>
-          <button className="danger" type="button" role="menuitem" onClick={() => { onDelete(clip); setOpen(false); }}><TrashIcon />Delete</button>
-        </div>}
+        <button
+          className="icon-button menu-trigger"
+          type="button"
+          aria-label="Clip actions"
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen((open) => !open)}
+        >
+          <MoreIcon />
+        </button>
+        {menuOpen && (
+          <div className="clip-menu" role="menu">
+            <button type="button" role="menuitem" onClick={() => { onFavorite(clip); setMenuOpen(false); }}>
+              <StarIcon fill={clip.favorite ? 'currentColor' : 'none'} /> {clip.favorite ? 'Remove favorite' : 'Add to favorites'}
+            </button>
+            <button type="button" role="menuitem" onClick={() => { onEdit(clip); setMenuOpen(false); }}>
+              <EditIcon /> Edit
+            </button>
+            <button className="danger" type="button" role="menuitem" onClick={() => { onDelete(clip); setMenuOpen(false); }}>
+              <TrashIcon /> Delete
+            </button>
+          </div>
+        )}
       </div>
     </article>
   );

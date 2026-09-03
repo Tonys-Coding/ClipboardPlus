@@ -2,23 +2,69 @@ import type { AddClipInput, Clip, ClipType, Settings, StorageState } from './typ
 
 export const STORAGE_KEY = 'clipboardPlus';
 export const MAX_CLIP_LENGTH = 50_000;
-export const DEFAULT_SETTINGS: Settings = { autoCapture: true, historyLimit: 500, excludedSites: [] };
-export const DEFAULT_STATE: StorageState = { version: 1, clips: [], settings: DEFAULT_SETTINGS };
 
-export function normalizeContent(value: string): string { return value.replace(/\r\n?/g, '\n').trim(); }
+export const DEFAULT_SETTINGS: Settings = {
+  autoCapture: true,
+  historyLimit: 500,
+  excludedSites: [],
+};
+
+export const DEFAULT_STATE: StorageState = {
+  version: 2,
+  clips: [],
+  settings: DEFAULT_SETTINGS,
+};
+
+export function normalizeContent(value: string): string {
+  return value.replace(/\r\n?/g, '\n').trim();
+}
+
+export function looksLikeCode(content: string): boolean {
+  const value = content.trim();
+  if (value.length < 4) return false;
+  if (/^```[\s\S]*```$/m.test(value) || /^#!\s*\/\S+/m.test(value)) return true;
+
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (parsed !== null && typeof parsed === 'object') return true;
+  } catch {
+    // Most code is not JSON; continue with syntax signals.
+  }
+
+  if (/<[a-z][^>]*>[\s\S]*<\/[a-z][^>]*>|<[a-z][^>]*\/>/i.test(value)) return true;
+  if (/\b(?:SELECT[\s\S]+FROM|INSERT\s+INTO|UPDATE[\s\S]+SET|CREATE\s+TABLE)\b/i.test(value)) return true;
+  if (/(?:^|\n)\s*(?:[#.$][\w-]+|[a-z][\w-]*(?:\s+[.#][\w-]+)?)\s*\{[^}]+:[^}]+\}/im.test(value)) return true;
+
+  let score = 0;
+  if (/\b(?:const|let|var|function|class|interface|enum|type|import|export|return|async|await|def|lambda|public|private|protected|package|namespace|func|struct|if|else|switch|case|for|while|try|catch|throw|new)\b/.test(value)) score += 2;
+  if (/=>|===|!==|==|!=|:=|->|&&|\|\||\?\?/.test(value)) score += 2;
+  if (/[{}[\]]/.test(value)) score += 1;
+  if (/;\s*(?:\n|$)/m.test(value)) score += 1;
+  if (/\b[\w.$]+\([^\n)]*\)\s*(?:[{:;]|=>|$)/m.test(value)) score += 1;
+  if (/\n(?:\t| {2,})\S/.test(value)) score += 1;
+  if (/^(?:\$|>)\s+(?:npm|pnpm|yarn|git|curl|brew|python|node|swift|cargo)\b/m.test(value)) score += 3;
+  return score >= 3;
+}
 
 export function detectClipType(content: string): ClipType {
   try {
     const url = new URL(content);
-    return (url.protocol === 'http:' || url.protocol === 'https:') && !/\s/.test(content) ? 'url' : 'text';
-  } catch { return 'text'; }
+    if ((url.protocol === 'http:' || url.protocol === 'https:') && !/\s/.test(content)) return 'url';
+  } catch {
+    // Continue with local text classification.
+  }
+  return looksLikeCode(content) ? 'code' : 'text';
 }
 
 export function normalizeHostname(value: string): string | null {
   const candidate = value.trim().toLowerCase();
   if (!candidate) return null;
-  try { return new URL(candidate.includes('://') ? candidate : `https://${candidate}`).hostname.replace(/^www\./, ''); }
-  catch { return null; }
+  try {
+    return new URL(candidate.includes('://') ? candidate : `https://${candidate}`).hostname
+      .replace(/^www\./, '');
+  } catch {
+    return null;
+  }
 }
 
 export function isHostExcluded(hostname: string, excludedSites: string[]): boolean {
@@ -28,33 +74,82 @@ export function isHostExcluded(hostname: string, excludedSites: string[]): boole
 
 export function pruneClips(clips: Clip[], limit: number): Clip[] {
   const favorites = clips.filter((clip) => clip.favorite).sort((a, b) => b.updatedAt - a.updatedAt);
-  const history = clips.filter((clip) => !clip.favorite).sort((a, b) => b.updatedAt - a.updatedAt).slice(0, limit);
+  const history = clips
+    .filter((clip) => !clip.favorite)
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+    .slice(0, limit);
   return [...favorites, ...history].sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
-export function addClip(state: StorageState, input: AddClipInput, now = Date.now(), id: string = crypto.randomUUID()): StorageState {
+export function addClip(
+  state: StorageState,
+  input: AddClipInput,
+  now = Date.now(),
+  id: string = crypto.randomUUID(),
+): StorageState {
   const content = normalizeContent(input.content);
   if (!content) throw new Error('Clipboard item is empty.');
   if (content.length > MAX_CLIP_LENGTH) throw new Error('Clipboard item is too long.');
+
   const duplicate = state.clips.find((clip) => clip.content === content);
-  const next: Clip = duplicate
-    ? { ...duplicate, type: detectClipType(content), title: input.title?.trim() || duplicate.title, sourceUrl: input.sourceUrl || duplicate.sourceUrl, sourceApp: input.sourceApp || duplicate.sourceApp, updatedAt: now }
-    : { id: input.id || id, type: detectClipType(content), content, title: input.title?.trim() || undefined, sourceUrl: input.sourceUrl, sourceApp: input.sourceApp, favorite: false, createdAt: now, updatedAt: now };
-  return { ...state, clips: pruneClips([next, ...state.clips.filter((clip) => clip.id !== next.id)], state.settings.historyLimit) };
+  const nextClip: Clip = duplicate
+    ? {
+        ...duplicate,
+        type: detectClipType(content),
+        title: input.title?.trim() || duplicate.title,
+        sourceUrl: input.sourceUrl || duplicate.sourceUrl,
+        sourceApp: input.sourceApp || duplicate.sourceApp,
+        updatedAt: now,
+      }
+    : {
+        id: input.id || id,
+        type: detectClipType(content),
+        content,
+        title: input.title?.trim() || undefined,
+        sourceUrl: input.sourceUrl,
+        sourceApp: input.sourceApp,
+        favorite: false,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+  return {
+    ...state,
+    clips: pruneClips(
+      [nextClip, ...state.clips.filter((clip) => clip.id !== nextClip.id)],
+      state.settings.historyLimit,
+    ),
+  };
 }
 
 export function migrateState(value: unknown): StorageState {
   if (!value || typeof value !== 'object') return structuredClone(DEFAULT_STATE);
   const candidate = value as Partial<StorageState>;
+  const needsTypeMigration = candidate.version !== 2;
   return {
-    version: 1,
-    clips: Array.isArray(candidate.clips) ? candidate.clips.map((clip) => ({ ...clip, type: detectClipType(clip.content) })) : [],
-    settings: { ...DEFAULT_SETTINGS, ...(candidate.settings ?? {}), excludedSites: Array.isArray(candidate.settings?.excludedSites) ? candidate.settings.excludedSites : [] },
+    version: 2,
+    clips: Array.isArray(candidate.clips)
+      ? candidate.clips.map((clip) => ({
+          ...clip,
+          type: needsTypeMigration || !['text', 'url', 'code'].includes(clip.type)
+            ? typeof clip?.content === 'string' ? detectClipType(clip.content) : 'text'
+            : clip.type,
+        }))
+      : [],
+    settings: {
+      ...DEFAULT_SETTINGS,
+      ...(candidate.settings ?? {}),
+      excludedSites: Array.isArray(candidate.settings?.excludedSites)
+        ? candidate.settings.excludedSites
+        : [],
+    },
   };
 }
 
 export function filterClips(clips: Clip[], query: string): Clip[] {
   const needle = query.trim().toLowerCase();
   if (!needle) return clips;
-  return clips.filter((clip) => [clip.content, clip.title, clip.sourceUrl, clip.sourceApp].some((value) => value?.toLowerCase().includes(needle)));
+  return clips.filter((clip) =>
+    [clip.content, clip.title, clip.sourceUrl, clip.sourceApp].some((value) => value?.toLowerCase().includes(needle)),
+  );
 }

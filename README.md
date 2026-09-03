@@ -4,6 +4,8 @@ Clipboard+ is a private Chrome clipboard history for text and links. Click any s
 
 The popup and settings interface use the bundled Syne variable font, the official Clipboard+ logo, and a larger dark graphite-and-gold layout designed for quick scanning.
 
+Clipboard+ classifies exact clip content locally as text, URL, or recognizable code. Category filters and the capture rail use the supplied type icons, while storage schema v2 migrates existing text and URL history automatically.
+
 ## Development
 
 ```sh

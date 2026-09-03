@@ -1,11 +1,71 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_STATE, addClip, detectClipType, migrateState, normalizeContent, pruneClips } from './clips';
+import {
+  DEFAULT_STATE,
+  addClip,
+  detectClipType,
+  filterClips,
+  isHostExcluded,
+  migrateState,
+  normalizeContent,
+  normalizeHostname,
+  pruneClips,
+} from './clips';
 import type { Clip, StorageState } from './types';
 
-const makeClip = (id: string, favorite: boolean, updatedAt: number): Clip => ({ id, type: 'text', content: `clip ${id}`, favorite, createdAt: updatedAt, updatedAt });
+const makeClip = (id: string, favorite: boolean, updatedAt: number): Clip => ({
+  id,
+  type: 'text',
+  content: `clip ${id}`,
+  favorite,
+  createdAt: updatedAt,
+  updatedAt,
+});
+
 describe('clip behavior', () => {
-  it('normalizes content and detects web URLs', () => { expect(normalizeContent(' hi\r\nthere ')).toBe('hi\nthere'); expect(detectClipType('https://example.com')).toBe('url'); expect(detectClipType('See https://example.com')).toBe('text'); });
-  it('deduplicates content and preserves favorite status', () => { const existing = { ...makeClip('a', true, 1), content: 'same' }; const state: StorageState = { ...DEFAULT_STATE, clips: [makeClip('b', false, 2), existing] }; const result = addClip(state, { content: ' same ' }, 50, 'unused'); expect(result.clips.map((clip) => clip.id)).toEqual(['a', 'b']); expect(result.clips[0].favorite).toBe(true); });
-  it('prunes only non-favorites', () => { expect(pruneClips([makeClip('old', false, 1), makeClip('favorite', true, 2), makeClip('new', false, 3)], 1).map((clip) => clip.id)).toEqual(['new', 'favorite']); });
-  it('fills storage defaults', () => { expect(migrateState({ clips: [] })).toEqual(DEFAULT_STATE); });
+  it('normalizes line endings and detects URLs, code, and ordinary text', () => {
+    expect(normalizeContent('  hello\r\nworld  ')).toBe('hello\nworld');
+    expect(detectClipType('https://example.com/path')).toBe('url');
+    expect(detectClipType('const answer = items.map((item) => item.id);')).toBe('code');
+    expect(detectClipType('{"name":"Clipboard+","enabled":true}')).toBe('code');
+    expect(detectClipType('def greet(name):\n  return f"Hello {name}"')).toBe('code');
+    expect(detectClipType('javascript:alert(1)')).toBe('text');
+    expect(detectClipType('See https://example.com')).toBe('text');
+    expect(detectClipType('Reminder: call John (555) 555-0100 tomorrow.')).toBe('text');
+  });
+
+  it('deduplicates content, moves it to the top, and preserves its favorite', () => {
+    const existing = { ...makeClip('a', true, 1), content: 'same' };
+    const state: StorageState = { ...DEFAULT_STATE, clips: [makeClip('b', false, 2), existing] };
+    const result = addClip(state, { content: ' same ', title: 'Updated source' }, 50, 'unused');
+    expect(result.clips.map((clip) => clip.id)).toEqual(['a', 'b']);
+    expect(result.clips[0]).toMatchObject({ content: 'same', favorite: true, title: 'Updated source', updatedAt: 50 });
+  });
+
+  it('prunes only non-favorites and keeps newest history', () => {
+    const clips = [makeClip('old', false, 1), makeClip('favorite', true, 2), makeClip('new', false, 3)];
+    expect(pruneClips(clips, 1).map((clip) => clip.id)).toEqual(['new', 'favorite']);
+  });
+
+  it('migrates missing settings and reclassifies legacy clips', () => {
+    const state = migrateState({
+      version: 1,
+      clips: [{ ...makeClip('legacy', false, 1), content: 'const legacy = true;', type: 'text' }],
+    });
+    expect(state.settings).toEqual(DEFAULT_STATE.settings);
+    expect(state.version).toBe(2);
+    expect(state.clips[0].type).toBe('code');
+  });
+
+  it('normalizes exclusions and matches subdomains', () => {
+    expect(normalizeHostname('https://www.Example.com/path')).toBe('example.com');
+    expect(isHostExcluded('docs.example.com', ['example.com'])).toBe(true);
+    expect(isHostExcluded('notexample.com', ['example.com'])).toBe(false);
+  });
+
+  it('searches content, titles, and source URLs case-insensitively', () => {
+    const clips: Clip[] = [{ ...makeClip('1', false, 1), content: 'Alpha', title: 'Project Home', sourceUrl: 'https://example.com' }];
+    expect(filterClips(clips, 'PROJECT')).toHaveLength(1);
+    expect(filterClips(clips, 'example')).toHaveLength(1);
+    expect(filterClips(clips, 'missing')).toHaveLength(0);
+  });
 });

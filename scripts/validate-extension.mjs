@@ -26,6 +26,9 @@ const referencedFiles = [
   ...Object.values(manifest.action.default_icon),
   'fonts/Syne-Variable.woff2',
   'icons/clipboard-plus-logo.png',
+  'icons/type-code.png',
+  'icons/type-text.png',
+  'icons/type-url.png',
 ];
 
 await Promise.all(referencedFiles.map((file) => stat(resolve(outputDirectory, file))));
