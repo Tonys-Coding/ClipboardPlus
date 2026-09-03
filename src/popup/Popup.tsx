@@ -176,9 +176,9 @@ export function Popup() {
       <header className="app-header">
         <div className="brand">
           <img className="brand-mark" src="/icons/clipboard-plus-logo.png" alt="" />
-          <div><small>Capture / Recall</small><span>Clipboard<strong>+</strong></span></div>
+          <span>Clipboard<strong>+</strong></span>
         </div>
-        <div className="header-actions"><span className="local-badge">Local only</span><button className="icon-button" type="button" aria-label="Open settings" onClick={() => void chrome.runtime.openOptionsPage()}><SettingsIcon /></button></div>
+        <button className="icon-button" type="button" aria-label="Open settings" onClick={() => void chrome.runtime.openOptionsPage()}><SettingsIcon /></button>
       </header>
 
       <div className="command-row">
@@ -213,8 +213,6 @@ export function Popup() {
       {captureStatus === 'unavailable' && <div className="notice error-notice"><span>Clipboard+ could not access this tab. Check the extension's Site access setting, then refresh the page.</span></div>}
       {captureStatus === 'excluded' && <div className="notice"><span>This site is excluded in Clipboard+ settings.</span></div>}
       {captureStatus === 'disabled' && <div className="notice"><span>Automatic capture is turned off in Clipboard+ settings.</span></div>}
-
-      <div className="status-strip"><span>Web ready</span><span>Mac connected</span></div>
 
       <div className="content-scroll">
         {!state ? (

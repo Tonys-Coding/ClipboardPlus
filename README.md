@@ -6,6 +6,8 @@ The popup and settings interface use the bundled Syne variable font, the officia
 
 Clipboard+ classifies exact clip content locally as text, URL, or recognizable code. Category filters and the capture rail use the supplied type icons, while storage schema v2 migrates existing text and URL history automatically.
 
+Syne is applied consistently to every interface control, and the header keeps only the Clipboard+ identity and settings action. Connection and capture wording appears only when it helps resolve an unavailable, excluded, restricted, or disabled state.
+
 ## Development
 
 ```sh

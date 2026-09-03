@@ -26,7 +26,7 @@ body {
     radial-gradient(circle at 12% -5%, rgba(231, 188, 49, .1), transparent 26rem),
     #080808;
 }
-button, input, select { font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+button, input, select { font-family: "Syne", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
 .options-shell { width: min(840px, calc(100% - 40px)); margin: 0 auto; padding: 55px 0 48px; }
 .options-header { display: flex; align-items: center; gap: 17px; margin-bottom: 30px; }

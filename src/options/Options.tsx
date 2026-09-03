@@ -93,7 +93,7 @@ export function Options() {
 
       <section className="settings-card privacy-card">
         <h2>Privacy and limitations</h2>
-        <p>Clipboard+ stores clips only in Chrome's local extension storage. It identifies links locally, never uploads data, and uses no analytics. Password and recognized payment/authentication fields are ignored.</p>
+        <p>Clipboard+ stores clips only in Chrome's local extension storage. It identifies links and recognizable code locally, never uploads data, and uses no analytics. Password and recognized payment/authentication fields are ignored.</p>
         <p>Chrome internal pages, the Chrome Web Store, and other restricted browser pages cannot be captured. Desktop-app copies are collected only while the optional macOS companion is running.</p>
       </section>
 
