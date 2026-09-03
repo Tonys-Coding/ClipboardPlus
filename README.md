@@ -2,6 +2,8 @@
 
 Clipboard+ is a private Chrome clipboard history for text and links. Click any saved item to copy it again, pin favorites, search recent history, edit or delete entries, add clips manually, and save the current tab.
 
+The popup and settings interface use the bundled Syne variable font, the official Clipboard+ logo, and a larger dark graphite-and-gold layout designed for quick scanning.
+
 ## Development
 
 ```sh

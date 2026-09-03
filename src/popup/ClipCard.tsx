@@ -7,6 +7,16 @@ interface Props {
   onFavorite: (clip: Clip) => void; onDelete: (clip: Clip) => void;
 }
 
+function relativeTime(timestamp: number): string {
+  const minutes = Math.floor(Math.max(0, Date.now() - timestamp) / 60_000);
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes} min${minutes === 1 ? '' : 's'} ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? '' : 's'} ago`;
+}
+
 export function ClipCard({ clip, copied, onCopy, onEdit, onFavorite, onDelete }: Props) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -19,13 +29,13 @@ export function ClipCard({ clip, copied, onCopy, onEdit, onFavorite, onDelete }:
   return (
     <article className="clip-card">
       <button className="clip-copy" type="button" onClick={() => onCopy(clip)} aria-label={`Copy ${clip.title || clip.content}`}>
-        <span className="type-icon">{clip.type === 'url' ? <LinkIcon /> : <ClipboardIcon />}</span>
-        <span className="clip-details">{clip.title && <strong>{clip.title}</strong>}<span>{clip.content}</span></span>
+        <span className={`type-icon ${clip.type}`}>{clip.type === 'url' ? <LinkIcon /> : <ClipboardIcon />}</span>
+        <span className="clip-details">{clip.title && <strong>{clip.title}</strong>}<span className="clip-content">{clip.content}</span><span className="clip-meta"><span>{relativeTime(clip.updatedAt)}</span>{clip.sourceApp && <span>{clip.sourceApp}</span>}</span></span>
         {copied && <span className="copied-label">Copied</span>}
       </button>
       {clip.favorite && <StarIcon className="favorite-indicator" fill="currentColor" />}
       <div className="clip-menu-wrap" ref={menuRef}>
-        <button className="icon-button" type="button" aria-label="Clip actions" onClick={() => setOpen((value) => !value)}><MoreIcon /></button>
+        <button className="icon-button menu-trigger" type="button" aria-label="Clip actions" onClick={() => setOpen((value) => !value)}><MoreIcon /></button>
         {open && <div className="clip-menu" role="menu">
           <button type="button" role="menuitem" onClick={() => { onFavorite(clip); setOpen(false); }}><StarIcon />{clip.favorite ? 'Remove favorite' : 'Add to favorites'}</button>
           <button type="button" role="menuitem" onClick={() => { onEdit(clip); setOpen(false); }}><EditIcon />Edit</button>
