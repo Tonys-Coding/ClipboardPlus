@@ -1,0 +1,40 @@
+:root { font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: #172033; background: #f6f7fb; }
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 420px; }
+button, input, textarea { font: inherit; }
+button { cursor: pointer; }
+svg { width: 20px; height: 20px; }
+.popup-shell { width: 420px; height: 560px; display: flex; flex-direction: column; background: #f6f7fb; }
+.app-header, .command-row, .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.app-header { padding: 18px 20px; background: white; border-bottom: 1px solid #e5e7eb; }
+.brand { display: flex; align-items: center; gap: 9px; font-weight: 800; font-size: 20px; color: #3448c5; }
+.icon-button { border: 0; background: transparent; padding: 8px; }
+.command-row { padding: 14px 16px; align-items: stretch; }
+.search-box { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 0 10px; background: white; border: 1px solid #d8dce8; border-radius: 10px; }
+.search-box input { border: 0; outline: 0; min-width: 0; width: 100%; }
+.search-box button { border: 0; background: transparent; padding: 2px; }
+.quick-actions { display: flex; gap: 6px; }
+.quick-actions button, .panel button, .edit-modal button { display: flex; align-items: center; gap: 5px; border: 0; border-radius: 9px; padding: 9px 10px; background: #3448c5; color: white; }
+.panel { margin: 0 16px 14px; padding: 14px; background: white; border: 1px solid #d8dce8; border-radius: 12px; display: grid; gap: 9px; }
+textarea { resize: vertical; min-height: 76px; border: 1px solid #d8dce8; border-radius: 8px; padding: 9px; }
+.content-scroll { overflow-y: auto; padding: 0 16px 18px; flex: 1; }
+.section-heading { padding: 12px 2px 7px; color: #606a80; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+.clip-list { display: grid; gap: 8px; }
+.clip-card { position: relative; display: flex; background: white; border: 1px solid #dde0e8; border-radius: 12px; }
+.clip-copy { flex: 1; min-width: 0; display: flex; align-items: center; gap: 11px; text-align: left; border: 0; background: transparent; padding: 13px; }
+.type-icon { display: grid; place-items: center; color: #3448c5; }
+.clip-details { min-width: 0; display: grid; gap: 3px; }
+.clip-details span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 270px; }
+.clip-menu-wrap { position: relative; display: grid; place-items: center; }
+.clip-menu { position: absolute; z-index: 2; top: 46px; right: 6px; min-width: 165px; background: white; border: 1px solid #d8dce8; border-radius: 10px; box-shadow: 0 10px 25px #1c24452b; padding: 5px; }
+.clip-menu button { display: flex; width: 100%; gap: 8px; padding: 8px; border: 0; background: transparent; color: inherit; }
+.clip-menu .danger { color: #b42318; }
+.favorite-indicator { position: absolute; right: 42px; top: 10px; color: #e1a900; }
+.copied-label { color: #198754; font-size: 12px; font-weight: 700; }
+.empty-state { margin: 55px auto; text-align: center; color: #667085; }
+.empty-state svg { width: 34px; height: 34px; }
+.notice { margin: 0 16px 10px; padding: 10px; border-radius: 8px; background: #fff2cc; }
+.modal-backdrop { position: fixed; inset: 0; display: grid; place-items: center; background: #17203380; z-index: 10; }
+.edit-modal { width: 360px; padding: 18px; background: white; border-radius: 14px; display: grid; gap: 10px; }
+.edit-modal > div { display: flex; align-items: center; justify-content: space-between; }
+.edit-modal h2 { margin: 0; }
