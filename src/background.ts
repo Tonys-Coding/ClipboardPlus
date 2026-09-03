@@ -11,7 +11,7 @@ interface NativeHostResponse {
   error?: string;
 }
 
-function sendToNativeHost(message: { action: string; ids?: string[] }): Promise<NativeHostResponse> {
+function sendToNativeHost(message: { action: string; ids?: string[]; clips?: Clip[] }): Promise<NativeHostResponse> {
   return new Promise((resolve, reject) => {
     chrome.runtime.sendNativeMessage(NATIVE_HOST, message, (response: NativeHostResponse | undefined) => {
       const lastError = chrome.runtime.lastError;
@@ -26,6 +26,15 @@ function sendToNativeHost(message: { action: string; ids?: string[] }): Promise<
       resolve(response);
     });
   });
+}
+
+let companionConnected = false;
+
+async function mirrorHistoryToCompanion(state: StorageState): Promise<void> {
+  const favorites = state.clips.filter((clip) => clip.favorite).sort((a, b) => b.updatedAt - a.updatedAt);
+  const recent = state.clips.filter((clip) => !clip.favorite).sort((a, b) => b.updatedAt - a.updatedAt);
+  const response = await sendToNativeHost({ action: 'replaceHistory', clips: [...favorites, ...recent].slice(0, 500) });
+  if (!response.ok) throw new Error(response.error || 'Could not update Quick Paste history.');
 }
 
 async function syncCompanion(): Promise<RuntimeResponse> {
@@ -58,8 +67,11 @@ async function syncCompanion(): Promise<RuntimeResponse> {
       }
       if (!response.hasMore || clips.length === 0) break;
     }
+    await mirrorHistoryToCompanion(state);
+    companionConnected = true;
     return { ok: true, state, companion: { available: true, imported } };
   } catch (error) {
+    companionConnected = false;
     return {
       ok: true,
       state,
@@ -178,6 +190,13 @@ async function handleMessage(message: RuntimeMessage): Promise<RuntimeResponse> 
         throw new Error('Unknown Clipboard+ action.');
     }
     await writeState(state);
+    if (companionConnected) {
+      try {
+        await mirrorHistoryToCompanion(state);
+      } catch {
+        companionConnected = false;
+      }
+    }
     return { ok: true, state };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : 'Unexpected error.' };

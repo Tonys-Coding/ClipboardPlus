@@ -11,9 +11,10 @@ host_manifests=(
 /bin/launchctl bootout "gui/$UID/com.clipboardplus.companion" 2>/dev/null || true
 /bin/rm -f "${host_manifests[@]}" "$launch_agent"
 /bin/rm -f "$install_dir/ClipboardPlusCompanion" "$install_dir/ClipboardPlusNativeHost"
+/bin/rm -rf "$install_dir/ClipboardPlus.app"
 
 if [[ "${1:-}" == "--purge" ]]; then
-  /bin/rm -f "$install_dir/companion-queue.json" "$install_dir/companion-queue.lock" "$install_dir/companion.log"
+  /bin/rm -f "$install_dir/companion-queue.json" "$install_dir/companion-queue.lock" "$install_dir/palette-history.json" "$install_dir/companion.log"
 fi
 
 echo "Clipboard+ companion uninstalled. Existing queue data was preserved unless --purge was supplied."

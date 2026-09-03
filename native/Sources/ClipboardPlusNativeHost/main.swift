@@ -4,6 +4,7 @@ import Foundation
 struct NativeRequest: Codable {
     let action: String
     let ids: [String]?
+    let clips: [NativeClip]?
 }
 
 struct NativeResponse: Codable {
@@ -41,7 +42,7 @@ do {
     while let header = try readExactly(4, from: input) {
         guard header.count == 4 else { break }
         let length = header.withUnsafeBytes { $0.loadUnaligned(as: UInt32.self).littleEndian }
-        guard length > 0, length <= 1_048_576,
+        guard length > 0, length <= 134_217_728,
               let payload = try readExactly(Int(length), from: input), payload.count == Int(length) else { break }
         let request = try JSONDecoder().decode(NativeRequest.self, from: payload)
 
@@ -66,6 +67,11 @@ do {
         case "acknowledge":
             try store.acknowledge(ids: request.ids ?? [])
             try writeMessage(.init(ok: true), to: output)
+        case "replaceHistory":
+            try store.replacePaletteHistory(request.clips ?? [])
+            try writeMessage(.init(ok: true), to: output)
+        case "getHistory":
+            try writeMessage(.init(ok: true, clips: store.readPaletteHistory()), to: output)
         default:
             try writeMessage(.init(ok: false, error: "Unknown native host action."), to: output)
         }

@@ -1,6 +1,6 @@
 # Clipboard+
 
-Clipboard+ is a private, local-first clipboard history for Chrome and macOS. The extension classifies text, links, and recognizable code, and provides favorites, search, editing, and one-click copying; the optional menu-bar companion captures text copied in Discord, Notion, Finder, Chrome, and other applications.
+Clipboard+ is a private, local-first clipboard history for Chrome and macOS. The extension classifies text, links, and recognizable code, and provides favorites, search, editing, and one-click copying; the optional menu-bar companion captures text across applications and opens a global Quick Paste palette for keyboard-first reuse.
 
 ## Development
 
@@ -30,9 +30,15 @@ Install and start universal capture with:
 npm run install:companion
 ```
 
-This installs two local binaries under `~/Library/Application Support/ClipboardPlus`, registers `com.clipboardplus.native` for Chrome Native Messaging, and starts a `C+` menu-bar LaunchAgent. Reload the unpacked extension afterward.
+This installs a local `ClipboardPlus.app` menu-bar companion and Native Messaging host under `~/Library/Application Support/ClipboardPlus`, registers `com.clipboardplus.native` for Chrome, and starts the companion through a LaunchAgent. Reload the unpacked extension afterward.
 
 Use the `C+` menu to pause or resume system-wide capture. To remove the companion while preserving its pending queue, run `zsh scripts/uninstall-macos-companion.sh`; add `--purge` to remove the queue and log as well.
+
+### Quick Paste
+
+Press **Control-Shift-V** from any application to open the native Quick Paste palette. Start typing to search clip content, titles, source applications, and URLs; use the arrow keys to select a result, then press **Return** to paste it into the application you were using. Press **Command-Return** to copy the result without automatically pasting, or **Escape** to close the palette.
+
+The first automatic paste asks for Clipboard+ Companion under **System Settings → Privacy & Security → Accessibility**. If permission is declined, Clipboard+ still copies the selected clip so it can be pasted normally. Quick Paste locally mirrors up to 500 clips from Chrome, prioritizing favorites, and also includes new system-wide captures immediately.
 
 ## Privacy and capture boundaries
 
@@ -48,6 +54,7 @@ Use the `C+` menu to pause or resume system-wide capture. To remove the companio
 - Click a clip to copy it immediately.
 - Use the three-dot menu to favorite, edit, or delete it.
 - Use **Add clip** for manual text and URLs, or **Save tab** to store the current page.
+- Press **Control-Shift-V** to search and paste from any macOS application.
 - On a webpage, right-click selected text or a link and use the dedicated **Save … to Clipboard+** action for a guaranteed capture path.
 - Open Settings to pause capture, exclude domains, change the history limit, or clear saved data.
 

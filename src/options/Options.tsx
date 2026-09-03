@@ -63,8 +63,8 @@ export function Options() {
 
       <section className="settings-card companion-card">
         <div>
-          <h2>Universal macOS capture</h2>
-          <p>The menu-bar companion collects copies from Discord, Notion, Chrome, and other applications.</p>
+          <h2>Quick Paste</h2>
+          <p>Press ⌃⇧V anywhere to search your favorites and recent clips. Return pastes into the previous app; ⌘Return copies without pasting.</p>
         </div>
         <span className={`connection-badge ${companionOnline ? 'online' : ''}`}><span />{companionOnline ? 'Connected' : 'Offline'}</span>
       </section>

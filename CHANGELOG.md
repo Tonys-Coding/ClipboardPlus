@@ -1,6 +1,14 @@
 # Changelog
 
-Clipboard+'s Git history was reconstructed from local development milestones after versions 1.0.0 through 1.4.2 had already been built. The tags preserve the rollout order; their publication timestamps are intentionally not backdated.
+Clipboard+'s Git history was reconstructed from local development milestones after versions 1.0.0 through 1.4.2 had already been built. Those tags preserve the rollout order; their publication timestamps are intentionally not backdated. Releases from 1.5.0 onward follow the live project history.
+
+## 1.5.0
+
+- Add a global macOS Quick Paste palette opened with Control-Shift-V.
+- Search favorites and recent clips by content, title, source application, or URL.
+- Paste with Return, copy without pasting with Command-Return, and navigate entirely from the keyboard.
+- Mirror the 500 most relevant Chrome clips into local companion storage while retaining immediately captured native clips.
+- Fall back to copying and prompt for macOS Accessibility permission when automatic pasting is unavailable.
 
 ## 1.4.2
 

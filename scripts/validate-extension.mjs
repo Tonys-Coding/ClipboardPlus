@@ -17,6 +17,8 @@ if (nativeManifestTemplate.name !== 'com.clipboardplus.native' || nativeManifest
   throw new Error('The Native Messaging manifest template is invalid.');
 }
 
+await stat(resolve(outputDirectory, '..', 'native', 'Installer', 'Info.plist.template'));
+
 const referencedFiles = [
   manifest.background.service_worker,
   manifest.action.default_popup,

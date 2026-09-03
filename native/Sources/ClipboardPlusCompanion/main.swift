@@ -21,6 +21,10 @@ final class ClipboardMonitor {
         }
     }
 
+    func notePasteboardWrite() {
+        lastChangeCount = pasteboard.changeCount
+    }
+
     private func checkClipboard() {
         let currentChangeCount = pasteboard.changeCount
         guard currentChangeCount != lastChangeCount else { return }
@@ -55,6 +59,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private var store: CompanionStore!
     private var monitor: ClipboardMonitor!
+    private var quickPaste: QuickPasteController!
+    private var globalHotKey: GlobalHotKey?
     private let captureItem = NSMenuItem(title: "Capture system clipboard", action: #selector(toggleCapture), keyEquivalent: "")
     private let pendingItem = NSMenuItem(title: "0 clips waiting for Chrome", action: nil, keyEquivalent: "")
     private let lastCaptureItem = NSMenuItem(title: "No captures yet", action: nil, keyEquivalent: "")
@@ -65,7 +71,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             monitor = ClipboardMonitor(store: store)
             monitor.onCapture = { [weak self] clip in self?.didCapture(clip) }
             monitor.start()
+            quickPaste = QuickPasteController(
+                store: store,
+                onPasteboardWrite: { [weak self] in self?.monitor.notePasteboardWrite() },
+                onStatus: { [weak self] status in self?.showStatus(status) }
+            )
             configureMenu()
+            do {
+                globalHotKey = try GlobalHotKey { [weak self] in self?.quickPaste.show() }
+            } catch {
+                NSLog("Clipboard+ could not register Quick Paste: %@", error.localizedDescription)
+                showStatus(error.localizedDescription)
+            }
             refreshMenu()
         } catch {
             let alert = NSAlert()
@@ -83,6 +100,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let heading = NSMenuItem(title: "Clipboard+ Companion", action: nil, keyEquivalent: "")
         heading.isEnabled = false
         menu.addItem(heading)
+        let quickPasteItem = NSMenuItem(title: "Open Quick Paste", action: #selector(openQuickPaste), keyEquivalent: "v")
+        quickPasteItem.keyEquivalentModifierMask = [.control, .shift]
+        quickPasteItem.target = self
+        menu.addItem(quickPasteItem)
+        let accessibilityItem = NSMenuItem(title: "Open Accessibility Settings", action: #selector(openAccessibilitySettings), keyEquivalent: "")
+        accessibilityItem.target = self
+        menu.addItem(accessibilityItem)
+        menu.addItem(.separator())
         captureItem.target = self
         menu.addItem(captureItem)
         pendingItem.isEnabled = false
@@ -111,6 +136,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         refreshMenu()
     }
 
+    private func showStatus(_ status: String) {
+        lastCaptureItem.title = status
+        refreshMenu()
+    }
+
+    @objc private func openQuickPaste() {
+        quickPaste.show()
+    }
+
+    @objc private func openAccessibilitySettings() {
+        let path = "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+        if let url = URL(string: path) { NSWorkspace.shared.open(url) }
+    }
+
     @objc private func toggleCapture() {
         guard var state = try? store.read() else { return }
         state.settings.captureEnabled.toggle()
@@ -129,6 +168,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func quit() {
         NSApplication.shared.terminate(nil)
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        globalHotKey?.invalidate()
     }
 }
 

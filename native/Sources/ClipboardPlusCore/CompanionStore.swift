@@ -5,6 +5,7 @@ public final class CompanionStore: @unchecked Sendable {
     public let dataDirectory: URL
     private let stateURL: URL
     private let lockURL: URL
+    private let paletteHistoryURL: URL
     private let decoder = JSONDecoder()
     private let encoder: JSONEncoder = {
         let encoder = JSONEncoder()
@@ -23,9 +24,13 @@ public final class CompanionStore: @unchecked Sendable {
         }
         self.stateURL = self.dataDirectory.appendingPathComponent("companion-queue.json")
         self.lockURL = self.dataDirectory.appendingPathComponent("companion-queue.lock")
+        self.paletteHistoryURL = self.dataDirectory.appendingPathComponent("palette-history.json")
         try FileManager.default.createDirectory(at: self.dataDirectory, withIntermediateDirectories: true)
         if !FileManager.default.fileExists(atPath: stateURL.path) {
             try withLock { try writeUnlocked(.init()) }
+        }
+        if !FileManager.default.fileExists(atPath: paletteHistoryURL.path) {
+            try withLock { try writePaletteHistoryUnlocked([]) }
         }
     }
 
@@ -56,7 +61,28 @@ public final class CompanionStore: @unchecked Sendable {
             state.pendingClips.insert(clip, at: 0)
             state.pendingClips = Array(state.pendingClips.prefix(max(1, state.settings.historyLimit)))
             try writeUnlocked(state)
+
+            var paletteHistory = try readPaletteHistoryUnlocked()
+            if let index = paletteHistory.firstIndex(where: { $0.content == content }) {
+                var existing = paletteHistory.remove(at: index)
+                existing.updatedAt = now
+                existing.sourceApp = sourceApp ?? existing.sourceApp
+                paletteHistory.insert(existing, at: 0)
+            } else {
+                paletteHistory.insert(clip, at: 0)
+            }
+            try writePaletteHistoryUnlocked(Self.normalizedPaletteHistory(paletteHistory))
             return clip
+        }
+    }
+
+    public func readPaletteHistory() throws -> [NativeClip] {
+        try withLock { try readPaletteHistoryUnlocked() }
+    }
+
+    public func replacePaletteHistory(_ clips: [NativeClip]) throws {
+        try withLock {
+            try writePaletteHistoryUnlocked(Self.normalizedPaletteHistory(clips))
         }
     }
 
@@ -84,6 +110,27 @@ public final class CompanionStore: @unchecked Sendable {
 
     private func writeUnlocked(_ state: CompanionQueueState) throws {
         try encoder.encode(state).write(to: stateURL, options: [.atomic])
+    }
+
+    private func readPaletteHistoryUnlocked() throws -> [NativeClip] {
+        guard FileManager.default.fileExists(atPath: paletteHistoryURL.path) else { return [] }
+        return try decoder.decode([NativeClip].self, from: Data(contentsOf: paletteHistoryURL))
+    }
+
+    private func writePaletteHistoryUnlocked(_ clips: [NativeClip]) throws {
+        try encoder.encode(clips).write(to: paletteHistoryURL, options: [.atomic])
+    }
+
+    private static func normalizedPaletteHistory(_ clips: [NativeClip]) -> [NativeClip] {
+        var seenContents = Set<String>()
+        let valid = clips.filter { clip in
+            guard !clip.content.isEmpty, clip.content.count <= 50_000, !seenContents.contains(clip.content) else { return false }
+            seenContents.insert(clip.content)
+            return true
+        }
+        let favorites = valid.filter(\.favorite).sorted { $0.updatedAt > $1.updatedAt }
+        let recent = valid.filter { !$0.favorite }.sorted { $0.updatedAt > $1.updatedAt }
+        return Array((favorites + recent).prefix(500))
     }
 
     private func withLock<T>(_ operation: () throws -> T) throws -> T {

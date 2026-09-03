@@ -70,3 +70,15 @@ public struct CompanionQueueState: Codable, Equatable, Sendable {
         self.settings = settings
     }
 }
+
+public enum PaletteSearch {
+    public static func filter(_ clips: [NativeClip], query rawQuery: String) -> [NativeClip] {
+        let query = rawQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return clips }
+        return clips.filter { clip in
+            [clip.content, clip.title, clip.sourceUrl, clip.sourceApp]
+                .compactMap { $0 }
+                .contains { $0.localizedCaseInsensitiveContains(query) }
+        }
+    }
+}
