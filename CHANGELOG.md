@@ -2,6 +2,12 @@
 
 Clipboard+'s Git history was reconstructed from local development milestones after versions 1.0.0 through 1.4.2 had already been built. Those tags preserve the rollout order; their publication timestamps are intentionally not backdated. Releases from 1.5.0 onward follow the live project history.
 
+## 1.6.2
+
+- Frame the Capture Controls page with responsive Clipboard+-themed side artwork on wide displays.
+- Build the decoration from layered clipboard cards, content-type symbols, connector rails, and a subtle logo watermark.
+- Keep the visuals non-interactive, hide them when space is limited, and disable their restrained motion when reduced motion is requested.
+
 ## 1.6.1
 
 - Add first-run disclosure and affirmative consent before automatic website capture.

@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { CheckIcon, PlusIcon, TrashIcon, XIcon } from '../components/Icons';
+import { CheckIcon, ClipboardIcon, LinkIcon, PlusIcon, TrashIcon, XIcon } from '../components/Icons';
 import { CAPTURE_CONSENT_VERSION, normalizeHostname } from '../lib/clips';
 import { COMPANION_ENABLED } from '../lib/build';
 import { removeWebsiteAccess, requestWebsiteAccess } from '../lib/capturePermissions';
@@ -100,6 +100,24 @@ export function Options() {
 
   return (
     <main className="options-shell">
+      <aside className="ambient-art ambient-left" aria-hidden="true">
+        <span className="ambient-orbit" />
+        <img src="/icons/clipboard-plus-logo.png" alt="" />
+        <span className="ambient-card ambient-card-text"><ClipboardIcon /></span>
+        <span className="ambient-card ambient-card-link"><LinkIcon /></span>
+        <span className="ambient-card ambient-card-code">&lt;/&gt;</span>
+        <span className="ambient-node ambient-node-one" />
+        <span className="ambient-node ambient-node-two" />
+      </aside>
+      <aside className="ambient-art ambient-right" aria-hidden="true">
+        <span className="ambient-orbit" />
+        <img src="/icons/clipboard-plus-logo.png" alt="" />
+        <span className="ambient-card ambient-card-text"><ClipboardIcon /></span>
+        <span className="ambient-card ambient-card-link"><LinkIcon /></span>
+        <span className="ambient-card ambient-card-code">&lt;/&gt;</span>
+        <span className="ambient-node ambient-node-one" />
+        <span className="ambient-node ambient-node-two" />
+      </aside>
       <header className="options-header">
         <img className="options-logo" src="/icons/clipboard-plus-logo.png" alt="Clipboard+ logo" />
         <div><h1>Capture controls</h1><p>Choose what Clipboard+ collects and keeps on this device.</p></div>
