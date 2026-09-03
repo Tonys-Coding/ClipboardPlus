@@ -2,7 +2,13 @@ import { addClip, detectClipType, normalizeContent, normalizeHostname, pruneClip
 import { ensureState, readState, writeState } from './lib/storage';
 import type { RuntimeMessage, RuntimeResponse, Settings, StorageState } from './lib/types';
 
-chrome.runtime.onInstalled.addListener(() => { void ensureState(); });
+chrome.runtime.onInstalled.addListener(() => {
+  void ensureState();
+  chrome.contextMenus.removeAll(() => {
+    chrome.contextMenus.create({ id: 'clipboard-plus-selection', title: 'Save selection to Clipboard+', contexts: ['selection'] });
+    chrome.contextMenus.create({ id: 'clipboard-plus-link', title: 'Save link to Clipboard+', contexts: ['link'] });
+  });
+});
 chrome.runtime.onStartup.addListener(() => { void ensureState(); });
 
 function updateClip(state: StorageState, id: string, changes: { content: string; title?: string }): StorageState {
@@ -49,4 +55,13 @@ chrome.runtime.onMessage.addListener((message: RuntimeMessage, _sender, sendResp
   queue = queue.then(() => handleMessage(message), () => handleMessage(message));
   void queue.then(sendResponse);
   return true;
+});
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  const content = info.menuItemId === 'clipboard-plus-selection' ? info.selectionText : info.menuItemId === 'clipboard-plus-link' ? info.linkUrl : undefined;
+  if (!content) return;
+  queue = queue.then(
+    () => handleMessage({ type: 'ADD_CLIP', payload: { content, title: tab?.title, sourceUrl: info.pageUrl } }),
+    () => handleMessage({ type: 'ADD_CLIP', payload: { content, title: tab?.title, sourceUrl: info.pageUrl } }),
+  );
 });

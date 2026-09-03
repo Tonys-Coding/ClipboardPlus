@@ -6,6 +6,8 @@ import type { Clip, StorageState } from '../lib/types';
 import { ClipCard } from './ClipCard';
 import './popup.css';
 
+type CaptureStatus = 'checking' | 'active' | 'disabled' | 'excluded' | 'restricted' | 'unavailable';
+
 export function Popup() {
   const [state, setState] = useState<StorageState | null>(null);
   const [query, setQuery] = useState('');
@@ -15,6 +17,7 @@ export function Popup() {
   const [editDraft, setEditDraft] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [message, setMessage] = useState('');
+  const [captureStatus, setCaptureStatus] = useState<CaptureStatus>('checking');
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -24,6 +27,20 @@ export function Popup() {
     };
     chrome.storage.onChanged.addListener(listener);
     return () => chrome.storage.onChanged.removeListener(listener);
+  }, []);
+  useEffect(() => {
+    void (async () => {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      const url = tab?.url ?? '';
+      if (!tab?.id || !/^(https?|file):\/\//i.test(url)) { setCaptureStatus('restricted'); return; }
+      const ping = () => chrome.tabs.sendMessage(tab.id!, { type: 'PING_CAPTURE' }) as Promise<{ enabled: boolean; excluded: boolean }>;
+      try {
+        let response;
+        try { response = await ping(); }
+        catch { await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] }); await new Promise((resolve) => window.setTimeout(resolve, 100)); response = await ping(); }
+        setCaptureStatus(response.excluded ? 'excluded' : response.enabled ? 'active' : 'disabled');
+      } catch { setCaptureStatus('unavailable'); }
+    })();
   }, []);
   useEffect(() => { if (addOpen) inputRef.current?.focus(); }, [addOpen]);
 
@@ -53,6 +70,10 @@ export function Popup() {
     <div className="command-row"><label className="search-box"><SearchIcon /><input aria-label="Search clips" placeholder="Search clips" value={query} onChange={(event) => setQuery(event.target.value)} />{query && <button aria-label="Clear search" onClick={() => setQuery('')}><XIcon /></button>}</label><div className="quick-actions"><button onClick={() => setAddOpen((value) => !value)}><PlusIcon />Add clip</button><button onClick={() => void saveTab()}><LinkIcon />Save tab</button></div></div>
     {addOpen && <form className="panel" onSubmit={add}><label htmlFor="new-clip">Paste or type anything</label><textarea id="new-clip" ref={inputRef} value={draft} onChange={(event) => setDraft(event.target.value)} required /><button disabled={!draft.trim()}><PlusIcon />Save clip</button></form>}
     {message && <div className="notice">{message}</div>}
+    {captureStatus === 'restricted' && <div className="notice">This browser page cannot be captured. Try a normal website.</div>}
+    {captureStatus === 'unavailable' && <div className="notice">Clipboard+ could not access this tab. Check Site access and refresh it.</div>}
+    {captureStatus === 'excluded' && <div className="notice">This site is excluded in Clipboard+ settings.</div>}
+    {captureStatus === 'disabled' && <div className="notice">Automatic capture is turned off.</div>}
     <div className="content-scroll">{!state ? <div className="empty-state">Loading…</div> : !visible.length ? <div className="empty-state"><ClipboardIcon /><h2>{query ? 'No matching clips' : 'Your clipboard is ready'}</h2><p>{query ? 'Try another search.' : 'Copy text on a webpage or add your first clip.'}</p></div> : <>{section('Favorites', favorites)}{section('Recent', history)}</>}</div>
     {editing && <div className="modal-backdrop"><form className="edit-modal" onSubmit={saveEdit}><div><h2>Edit clip</h2><button type="button" aria-label="Close edit dialog" onClick={() => setEditing(null)}><XIcon /></button></div><label htmlFor="edit-clip">Content</label><textarea id="edit-clip" value={editDraft} onChange={(event) => setEditDraft(event.target.value)} required /><button disabled={!editDraft.trim()}><CheckIcon />Save changes</button></form></div>}
   </main>;
