@@ -56,6 +56,31 @@ describe('clip behavior', () => {
     expect(state.clips[0].type).toBe('code');
   });
 
+  it('pauses legacy automatic capture until the current disclosure is accepted', () => {
+    const state = migrateState({
+      version: 2,
+      clips: [makeClip('kept', false, 1)],
+      settings: { autoCapture: true, historyLimit: 500, excludedSites: [] },
+    });
+    expect(state.clips).toHaveLength(1);
+    expect(state.settings).toMatchObject({ autoCapture: false, captureConsentVersion: 0 });
+  });
+
+  it('preserves automatic capture after current affirmative consent', () => {
+    const state = migrateState({
+      version: 2,
+      clips: [],
+      settings: {
+        autoCapture: true,
+        historyLimit: 500,
+        excludedSites: [],
+        captureConsentVersion: 1,
+        captureConsentAt: 123,
+      },
+    });
+    expect(state.settings.autoCapture).toBe(true);
+  });
+
   it('normalizes exclusions and matches subdomains', () => {
     expect(normalizeHostname('https://www.Example.com/path')).toBe('example.com');
     expect(isHostExcluded('docs.example.com', ['example.com'])).toBe(true);

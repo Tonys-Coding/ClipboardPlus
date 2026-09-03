@@ -9,7 +9,7 @@ vi.mock('../lib/runtime', () => ({ sendMessage: vi.fn() }));
 
 const state: StorageState = {
   version: 2,
-  settings: { autoCapture: true, historyLimit: 500, excludedSites: [] },
+  settings: { autoCapture: true, historyLimit: 500, excludedSites: [], captureConsentVersion: 1, captureConsentAt: 1 },
   clips: [
     { id: 'recent', type: 'text', content: 'Recent note', title: 'A misleading page title', sourceUrl: 'https://www.google.com/search?q=recent', sourceApp: 'Google Chrome', favorite: false, createdAt: 2, updatedAt: 2 },
     { id: 'favorite', type: 'url', content: 'https://example.com', title: 'Example home', sourceUrl: 'https://chatgpt.com/c/example', sourceApp: 'Google Chrome', favorite: true, createdAt: 1, updatedAt: 1 },
@@ -28,6 +28,7 @@ beforeEach(() => {
       sendMessage: vi.fn().mockResolvedValue({ ready: true, settingsLoaded: true, enabled: true, excluded: false }),
     },
     scripting: { executeScript: vi.fn().mockResolvedValue([]) },
+    permissions: { contains: vi.fn().mockResolvedValue(true) },
     runtime: { openOptionsPage: vi.fn() },
     storage: { onChanged: { addListener: vi.fn(), removeListener: vi.fn() } },
   });
@@ -165,5 +166,12 @@ describe('Clipboard+ popup', () => {
 
     expect(recentCard).toHaveClass('menu-open');
     expect(screen.getByRole('menu')).toHaveClass('open-up');
+  });
+
+  it('shows a recovery action when optional website access is absent', async () => {
+    (chrome.permissions.contains as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(false);
+    render(<Popup />);
+    expect(await screen.findByText('Automatic website capture is off.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Review & enable' })).toBeInTheDocument();
   });
 });

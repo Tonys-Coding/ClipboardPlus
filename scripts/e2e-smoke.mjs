@@ -35,10 +35,35 @@ try {
   if (!worker) worker = await context.waitForEvent('serviceworker', { timeout: 10_000 });
   const extensionId = new URL(worker.url()).host;
 
+  const onboardingPage = await context.newPage();
+  await onboardingPage.goto(`chrome-extension://${extensionId}/options.html`);
+  const enableCapture = onboardingPage.getByRole('button', { name: 'Enable website capture' });
+  if (await enableCapture.isVisible()) await enableCapture.click();
+  await onboardingPage.waitForFunction(async () => {
+    const stored = await chrome.storage.local.get('clipboardPlus');
+    const allowed = await chrome.permissions.contains({ origins: ['http://*/*', 'https://*/*'] });
+    const registrations = await chrome.scripting.getRegisteredContentScripts({ ids: ['clipboard-plus-web-capture'] });
+    return stored.clipboardPlus?.settings?.autoCapture === true && allowed && registrations.length === 1;
+  }, null, { timeout: 10_000 });
   const page = await context.newPage();
   const pageErrors = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
   await page.goto(`http://127.0.0.1:${address.port}`);
+  await page.waitForTimeout(250);
+  const captureHealth = await worker.evaluate(async () => {
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    const registrations = await chrome.scripting.getRegisteredContentScripts({ ids: ['clipboard-plus-web-capture'] });
+    const allowed = await chrome.permissions.getAll();
+    if (!tabs[0]?.id) return { tabs, registrations, allowed };
+    try {
+      return await chrome.tabs.sendMessage(tabs[0].id, { type: 'PING_CAPTURE' });
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : String(error), tabs, registrations, allowed };
+    }
+  });
+  if (!captureHealth?.ready || !captureHealth.settingsLoaded || !captureHealth.enabled) {
+    throw new Error(`Registered capture listener is not ready: ${JSON.stringify(captureHealth)}`);
+  }
 
   await page.locator('#keyboard-copy').selectText();
   await page.keyboard.press(process.platform === 'darwin' ? 'Meta+C' : 'Control+C');

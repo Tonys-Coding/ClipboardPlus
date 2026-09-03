@@ -2,11 +2,13 @@ import type { AddClipInput, Clip, ClipType, Settings, StorageState } from './typ
 
 export const STORAGE_KEY = 'clipboardPlus';
 export const MAX_CLIP_LENGTH = 50_000;
+export const CAPTURE_CONSENT_VERSION = 1;
 
 export const DEFAULT_SETTINGS: Settings = {
-  autoCapture: true,
+  autoCapture: false,
   historyLimit: 500,
   excludedSites: [],
+  captureConsentVersion: 0,
 };
 
 export const DEFAULT_STATE: StorageState = {
@@ -126,6 +128,10 @@ export function migrateState(value: unknown): StorageState {
   if (!value || typeof value !== 'object') return structuredClone(DEFAULT_STATE);
   const candidate = value as Partial<StorageState>;
   const needsTypeMigration = candidate.version !== 2;
+  const storedSettings: Partial<Settings> = candidate.settings ?? {};
+  const hasCurrentConsent = typeof storedSettings.captureConsentVersion === 'number'
+    && storedSettings.captureConsentVersion >= CAPTURE_CONSENT_VERSION
+    && typeof storedSettings.captureConsentAt === 'number';
   return {
     version: 2,
     clips: Array.isArray(candidate.clips)
@@ -138,7 +144,8 @@ export function migrateState(value: unknown): StorageState {
       : [],
     settings: {
       ...DEFAULT_SETTINGS,
-      ...(candidate.settings ?? {}),
+      ...storedSettings,
+      autoCapture: hasCurrentConsent && storedSettings.autoCapture === true,
       excludedSites: Array.isArray(candidate.settings?.excludedSites)
         ? candidate.settings.excludedSites
         : [],

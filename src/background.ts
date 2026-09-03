@@ -1,8 +1,11 @@
-import { addClip, detectClipType, normalizeContent, normalizeHostname, pruneClips } from './lib/clips';
+import { addClip, CAPTURE_CONSENT_VERSION, detectClipType, normalizeContent, normalizeHostname, pruneClips } from './lib/clips';
+import { COMPANION_ENABLED } from './lib/build';
+import { CAPTURE_ORIGINS, captureIsAuthorized, hasWebsiteAccess } from './lib/capturePermissions';
 import { ensureState, readState, writeState } from './lib/storage';
 import type { Clip, RuntimeMessage, RuntimeResponse, Settings, StorageState } from './lib/types';
 
 const NATIVE_HOST = 'com.clipboardplus.native';
+const CAPTURE_SCRIPT_ID = 'clipboard-plus-web-capture';
 
 interface NativeHostResponse {
   ok: boolean;
@@ -69,12 +72,18 @@ async function syncCompanion(): Promise<RuntimeResponse> {
     }
     await mirrorHistoryToCompanion(state);
     companionConnected = true;
-    return { ok: true, state, companion: { available: true, imported } };
+    return {
+      ok: true,
+      state,
+      permissions: { websiteAccess: await hasWebsiteAccess() },
+      companion: { available: true, imported },
+    };
   } catch (error) {
     companionConnected = false;
     return {
       ok: true,
       state,
+      permissions: { websiteAccess: await hasWebsiteAccess() },
       companion: {
         available: false,
         imported: 0,
@@ -84,8 +93,31 @@ async function syncCompanion(): Promise<RuntimeResponse> {
   }
 }
 
-chrome.runtime.onInstalled.addListener(() => {
-  void ensureState();
+async function syncCaptureRegistration(providedState?: StorageState): Promise<boolean> {
+  const state = providedState ?? await readState();
+  const websiteAccess = await hasWebsiteAccess();
+  const shouldRegister = captureIsAuthorized(state.settings, websiteAccess);
+  const registrations = await chrome.scripting.getRegisteredContentScripts({ ids: [CAPTURE_SCRIPT_ID] });
+  const isRegistered = registrations.length > 0;
+
+  if (shouldRegister && !isRegistered) {
+    await chrome.scripting.registerContentScripts([{
+      id: CAPTURE_SCRIPT_ID,
+      matches: CAPTURE_ORIGINS,
+      js: ['content.js'],
+      runAt: 'document_start',
+      allFrames: true,
+      persistAcrossSessions: true,
+    }]);
+  } else if (!shouldRegister && isRegistered) {
+    await chrome.scripting.unregisterContentScripts({ ids: [CAPTURE_SCRIPT_ID] });
+  }
+  return websiteAccess;
+}
+
+async function initializeExtension(openOnboarding: boolean): Promise<void> {
+  const state = await ensureState();
+  await syncCaptureRegistration(state);
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
       id: 'clipboard-plus-selection',
@@ -98,10 +130,32 @@ chrome.runtime.onInstalled.addListener(() => {
       contexts: ['link'],
     });
   });
+  if (openOnboarding && state.settings.captureConsentVersion < CAPTURE_CONSENT_VERSION) {
+    await chrome.runtime.openOptionsPage();
+  }
+}
+
+chrome.runtime.onInstalled.addListener((details) => {
+  void initializeExtension(details.reason === 'install');
 });
 
 chrome.runtime.onStartup.addListener(() => {
-  void ensureState();
+  void initializeExtension(false);
+});
+
+chrome.permissions.onRemoved.addListener((permissions) => {
+  if (!permissions.origins?.some((origin) => CAPTURE_ORIGINS.includes(origin))) return;
+  void (async () => {
+    const state = await readState();
+    const next = { ...state, settings: { ...state.settings, autoCapture: false } };
+    await writeState(next);
+    await syncCaptureRegistration(next);
+  })();
+});
+
+chrome.permissions.onAdded.addListener((permissions) => {
+  if (!permissions.origins?.some((origin) => CAPTURE_ORIGINS.includes(origin))) return;
+  void syncCaptureRegistration();
 });
 
 function updateClip(
@@ -146,16 +200,29 @@ function sanitizeSettings(current: Settings, changes: Partial<Settings>): Settin
     autoCapture: typeof changes.autoCapture === 'boolean' ? changes.autoCapture : current.autoCapture,
     historyLimit,
     excludedSites,
+    captureConsentVersion: typeof changes.captureConsentVersion === 'number'
+      ? Math.max(0, Math.floor(changes.captureConsentVersion))
+      : current.captureConsentVersion,
+    captureConsentAt: typeof changes.captureConsentAt === 'number'
+      ? changes.captureConsentAt
+      : current.captureConsentAt,
   };
 }
 
 async function handleMessage(message: RuntimeMessage): Promise<RuntimeResponse> {
   try {
-    if (message.type === 'SYNC_COMPANION') return await syncCompanion();
+    if (message.type === 'SYNC_COMPANION') {
+      if (!COMPANION_ENABLED) {
+        const state = await readState();
+        return { ok: true, state, permissions: { websiteAccess: await hasWebsiteAccess() } };
+      }
+      return await syncCompanion();
+    }
     let state = await readState();
+    let captureSettingsChanged = false;
     switch (message.type) {
       case 'GET_STATE':
-        return { ok: true, state };
+        return { ok: true, state, permissions: { websiteAccess: await hasWebsiteAccess() } };
       case 'ADD_CLIP':
         state = addClip(state, message.payload);
         break;
@@ -179,6 +246,7 @@ async function handleMessage(message: RuntimeMessage): Promise<RuntimeResponse> 
       case 'UPDATE_SETTINGS':
         state = { ...state, settings: sanitizeSettings(state.settings, message.payload) };
         state.clips = pruneClips(state.clips, state.settings.historyLimit);
+        captureSettingsChanged = true;
         break;
       case 'CLEAR_HISTORY':
         state = { ...state, clips: state.clips.filter((clip) => clip.favorite) };
@@ -190,14 +258,17 @@ async function handleMessage(message: RuntimeMessage): Promise<RuntimeResponse> 
         throw new Error('Unknown Clipboard+ action.');
     }
     await writeState(state);
-    if (companionConnected) {
+    const websiteAccess = captureSettingsChanged
+      ? await syncCaptureRegistration(state)
+      : await hasWebsiteAccess();
+    if (COMPANION_ENABLED && companionConnected) {
       try {
         await mirrorHistoryToCompanion(state);
       } catch {
         companionConnected = false;
       }
     }
-    return { ok: true, state };
+    return { ok: true, state, permissions: { websiteAccess } };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : 'Unexpected error.' };
   }

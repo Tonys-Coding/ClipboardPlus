@@ -10,13 +10,19 @@ vi.mock('../lib/runtime', () => ({ sendMessage: vi.fn() }));
 const state: StorageState = {
   version: 2,
   clips: [],
-  settings: { autoCapture: true, historyLimit: 500, excludedSites: [] },
+  settings: { autoCapture: true, historyLimit: 500, excludedSites: [], captureConsentVersion: 1, captureConsentAt: 1 },
 };
 
 describe('Options', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(sendMessage).mockResolvedValue({ ok: true, state });
+    vi.mocked(sendMessage).mockResolvedValue({ ok: true, state, permissions: { websiteAccess: true } });
+    vi.stubGlobal('chrome', {
+      permissions: {
+        request: vi.fn().mockResolvedValue(true),
+        remove: vi.fn().mockResolvedValue(true),
+      },
+    });
     vi.stubGlobal('confirm', vi.fn(() => true));
   });
 
@@ -26,6 +32,7 @@ describe('Options', () => {
     await screen.findByText('Automatic web capture');
     await user.click(screen.getByRole('checkbox'));
     expect(sendMessage).toHaveBeenCalledWith({ type: 'UPDATE_SETTINGS', payload: { autoCapture: false } });
+    expect(chrome.permissions.remove).toHaveBeenCalled();
 
     await user.selectOptions(screen.getByLabelText('History limit'), '250');
     expect(sendMessage).toHaveBeenCalledWith({ type: 'UPDATE_SETTINGS', payload: { historyLimit: 250 } });
@@ -36,5 +43,38 @@ describe('Options', () => {
 
     await user.click(screen.getByRole('button', { name: 'Clear history' }));
     expect(sendMessage).toHaveBeenCalledWith({ type: 'CLEAR_HISTORY' });
+  });
+
+  it('requires an affirmative permission grant before enabling automatic capture', async () => {
+    const user = userEvent.setup();
+    const unconsented: StorageState = {
+      ...state,
+      settings: { ...state.settings, autoCapture: false, captureConsentVersion: 0, captureConsentAt: undefined },
+    };
+    vi.mocked(sendMessage).mockResolvedValue({ ok: true, state: unconsented, permissions: { websiteAccess: false } });
+    render(<Options />);
+    await user.click(await screen.findByRole('button', { name: 'Enable website capture' }));
+    expect(chrome.permissions.request).toHaveBeenCalledWith({ origins: ['http://*/*', 'https://*/*'] });
+    expect(sendMessage).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'UPDATE_SETTINGS',
+      payload: expect.objectContaining({ autoCapture: true, captureConsentVersion: 1 }),
+    }));
+  });
+
+  it('keeps capture off and explains recovery when website access is denied', async () => {
+    const user = userEvent.setup();
+    const unconsented: StorageState = {
+      ...state,
+      settings: { ...state.settings, autoCapture: false, captureConsentVersion: 0, captureConsentAt: undefined },
+    };
+    vi.mocked(sendMessage).mockResolvedValue({ ok: true, state: unconsented, permissions: { websiteAccess: false } });
+    (chrome.permissions.request as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(false);
+    render(<Options />);
+    await user.click(await screen.findByRole('button', { name: 'Enable website capture' }));
+    expect(await screen.findByText(/Website access was not granted/)).toBeInTheDocument();
+    expect(sendMessage).not.toHaveBeenCalledWith(expect.objectContaining({
+      type: 'UPDATE_SETTINGS',
+      payload: expect.objectContaining({ autoCapture: true }),
+    }));
   });
 });

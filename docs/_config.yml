@@ -1,0 +1,5 @@
+title: Clipboard+
+description: Private, searchable clipboard history for Chrome.
+exclude:
+  - store-listing.md
+  - review-instructions.md

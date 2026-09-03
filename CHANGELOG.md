@@ -2,6 +2,16 @@
 
 Clipboard+'s Git history was reconstructed from local development milestones after versions 1.0.0 through 1.4.2 had already been built. Those tags preserve the rollout order; their publication timestamps are intentionally not backdated. Releases from 1.5.0 onward follow the live project history.
 
+## 1.6.1
+
+- Add first-run disclosure and affirmative consent before automatic website capture.
+- Default automatic capture to off and pause legacy capture until the current disclosure is accepted.
+- Move HTTP and HTTPS access to optional host permissions and dynamically register the capture listener only while authorized.
+- Remove optional website access when automatic capture is disabled and recover cleanly when permission is revoked elsewhere.
+- Add separate development and Chrome Web Store build profiles; compile Native Messaging and companion controls out of the store package.
+- Add public privacy, support, and local data-deletion pages, verified store listing copy, reviewer instructions, and reproducible store packaging.
+- Keep all v1.6 functionality permanently free and document the validation gates for a future encrypted-sync subscription.
+
 ## 1.6.0
 
 - Add reusable smart snippets with `{{field}}` placeholders, optional `{{field|default}}` values, duplicate-field reuse, and a live result preview.

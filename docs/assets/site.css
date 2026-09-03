@@ -1,0 +1,17 @@
+@font-face { font-family: Satoshi; src: url("Satoshi-Variable.woff2") format("woff2"); font-weight: 300 900; }
+:root { color-scheme: dark; font-family: Satoshi, ui-sans-serif, system-ui, sans-serif; color: #f4f0e7; background: #090908; --gold: #e6b82e; --muted: #aaa59b; }
+* { box-sizing: border-box; }
+body { margin: 0; background: radial-gradient(circle at 15% -5%, rgba(230,184,46,.15), transparent 30rem), #090908; }
+main { width: min(760px, calc(100% - 40px)); margin: 0 auto; padding: 64px 0 80px; }
+nav { display: flex; align-items: center; gap: 16px; padding-bottom: 35px; border-bottom: 1px solid #2c2a25; }
+nav img { width: 54px; height: 54px; object-fit: contain; }
+nav strong { margin-right: auto; font-size: 22px; }
+nav a, a { color: #f0cb56; text-underline-offset: 3px; }
+h1 { margin: 52px 0 12px; font-size: clamp(34px, 7vw, 62px); letter-spacing: -.045em; }
+h2 { margin-top: 38px; color: #fff5cd; font-size: 21px; }
+p, li { color: var(--muted); font-size: 15px; line-height: 1.75; }
+.lede { max-width: 620px; color: #d7d1c6; font-size: 18px; }
+.button { display: inline-block; margin-top: 18px; padding: 12px 17px; border-radius: 6px; color: #0a0a09; background: var(--gold); font-weight: 800; text-decoration: none; }
+.card { margin-top: 24px; padding: 24px; border: 1px solid #34322d; border-radius: 8px; background: #151513; }
+footer { margin-top: 52px; padding-top: 24px; border-top: 1px solid #2c2a25; color: #77736c; font-size: 13px; }
+@media (max-width: 620px) { nav { align-items: flex-start; flex-wrap: wrap; } nav strong { width: calc(100% - 72px); } }

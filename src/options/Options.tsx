@@ -1,6 +1,8 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { CheckIcon, PlusIcon, TrashIcon, XIcon } from '../components/Icons';
-import { normalizeHostname } from '../lib/clips';
+import { CAPTURE_CONSENT_VERSION, normalizeHostname } from '../lib/clips';
+import { COMPANION_ENABLED } from '../lib/build';
+import { removeWebsiteAccess, requestWebsiteAccess } from '../lib/capturePermissions';
 import { sendMessage } from '../lib/runtime';
 import type { Settings, StorageState } from '../lib/types';
 import './options.css';
@@ -11,11 +13,13 @@ export function Options() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const [companionOnline, setCompanionOnline] = useState(false);
+  const [websiteAccess, setWebsiteAccess] = useState(false);
 
   useEffect(() => {
-    void sendMessage({ type: 'SYNC_COMPANION' }).then((response) => {
+    void sendMessage({ type: COMPANION_ENABLED ? 'SYNC_COMPANION' : 'GET_STATE' }).then((response) => {
       if (response.state) setState(response.state);
       setCompanionOnline(Boolean(response.companion?.available));
+      setWebsiteAccess(Boolean(response.permissions?.websiteAccess));
     }).catch((reason: Error) => setError(reason.message));
   }, []);
 
@@ -29,6 +33,49 @@ export function Options() {
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Could not save settings.');
     }
+  };
+
+  const enableCapture = async () => {
+    try {
+      const granted = await requestWebsiteAccess();
+      if (!granted) {
+        setError('Website access was not granted. Clipboard+ will remain available for manual clips and saved tabs.');
+        return;
+      }
+      const response = await sendMessage({
+        type: 'UPDATE_SETTINGS',
+        payload: {
+          autoCapture: true,
+          captureConsentVersion: CAPTURE_CONSENT_VERSION,
+          captureConsentAt: Date.now(),
+        },
+      });
+      if (response.state) setState(response.state);
+      setWebsiteAccess(true);
+      setSaved(true);
+      setError('');
+      window.setTimeout(() => setSaved(false), 1500);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Could not enable automatic capture.');
+    }
+  };
+
+  const disableCapture = async () => {
+    try {
+      const response = await sendMessage({ type: 'UPDATE_SETTINGS', payload: { autoCapture: false } });
+      if (response.state) setState(response.state);
+      await removeWebsiteAccess();
+      setWebsiteAccess(false);
+      setSaved(true);
+      setError('');
+      window.setTimeout(() => setSaved(false), 1500);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Could not disable automatic capture.');
+    }
+  };
+
+  const continueWithoutCapture = async () => {
+    await update({ autoCapture: false, captureConsentVersion: CAPTURE_CONSENT_VERSION });
   };
 
   const addSite = (event: FormEvent) => {
@@ -61,18 +108,35 @@ export function Options() {
 
       {error && <div className="error-banner">{error}<button type="button" onClick={() => setError('')}><XIcon /></button></div>}
 
-      <section className="settings-card companion-card">
+      {state.settings.captureConsentVersion < CAPTURE_CONSENT_VERSION && (
+        <section className="settings-card consent-card" aria-labelledby="capture-consent-heading">
+          <span className="consent-kicker">Your choice</span>
+          <h2 id="capture-consent-heading">Enable automatic website capture?</h2>
+          <p>Clipboard+ can save text, links, recognizable code, page titles, and source URLs when you copy on websites you authorize. Everything stays in Chrome's local extension storage and is never uploaded.</p>
+          <ul>
+            <li>Password fields and recognized authentication and payment fields are ignored.</li>
+            <li>You can exclude sites, revoke website access, or clear your history at any time.</li>
+            <li>Manual clips and Save tab work without automatic capture.</li>
+          </ul>
+          <div className="consent-actions">
+            <button type="button" className="consent-secondary" onClick={() => void continueWithoutCapture()}>Continue without capture</button>
+            <button type="button" className="consent-primary" onClick={() => void enableCapture()}>Enable website capture</button>
+          </div>
+        </section>
+      )}
+
+      {COMPANION_ENABLED && <section className="settings-card companion-card">
         <div>
           <h2>Quick Paste</h2>
           <p>Press ⌃⇧V anywhere to search your favorites and recent clips. Return pastes into the previous app; ⌘Return copies without pasting.</p>
         </div>
         <span className={`connection-badge ${companionOnline ? 'online' : ''}`}><span />{companionOnline ? 'Connected' : 'Offline'}</span>
-      </section>
+      </section>}
 
       <section className="settings-card">
         <div className="setting-row">
-          <div><h2>Automatic web capture</h2><p>Save text when you copy it on supported webpages.</p></div>
-          <label className="switch"><input type="checkbox" checked={state.settings.autoCapture} onChange={(event) => void update({ autoCapture: event.target.checked })} /><span /></label>
+          <div><h2>Automatic web capture</h2><p>{websiteAccess && state.settings.autoCapture ? 'Enabled for authorized websites.' : 'Off. Manual clips and Save tab remain available.'}</p></div>
+          <label className="switch"><input type="checkbox" checked={websiteAccess && state.settings.autoCapture} onChange={(event) => void (event.target.checked ? enableCapture() : disableCapture())} /><span /></label>
         </div>
         <div className="divider" />
         <div className="setting-row">
@@ -93,8 +157,9 @@ export function Options() {
 
       <section className="settings-card privacy-card">
         <h2>Privacy and limitations</h2>
-        <p>Clipboard+ stores clips only in Chrome's local extension storage. It identifies links and recognizable code locally, never uploads data, and uses no analytics. Password and recognized payment/authentication fields are ignored.</p>
-        <p>Chrome internal pages, the Chrome Web Store, and other restricted browser pages cannot be captured. Desktop-app copies are collected only while the optional macOS companion is running.</p>
+        <p>Clipboard+ stores clips only in Chrome's local extension storage. It identifies links and recognizable code locally, never uploads data, and uses no analytics or advertisements. Password and recognized payment/authentication fields are ignored.</p>
+        <p>Chrome internal pages, the Chrome Web Store, browser UI, and other restricted pages cannot be captured. Website access is optional and can be removed by turning automatic capture off.</p>
+        <p><a href="https://tonys-coding.github.io/ClipboardPlus/privacy.html" target="_blank" rel="noreferrer">Privacy policy</a> · <a href="https://tonys-coding.github.io/ClipboardPlus/support.html" target="_blank" rel="noreferrer">Support</a> · <a href="https://tonys-coding.github.io/ClipboardPlus/data-deletion.html" target="_blank" rel="noreferrer">Delete your data</a></p>
       </section>
 
       <section className="settings-card danger-card">

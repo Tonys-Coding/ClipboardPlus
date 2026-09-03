@@ -1,6 +1,8 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CheckIcon, ClipboardIcon, LinkIcon, PlusIcon, SearchIcon, SettingsIcon, StarIcon, XIcon } from '../components/Icons';
 import { filterClips, STORAGE_KEY } from '../lib/clips';
+import { COMPANION_ENABLED } from '../lib/build';
+import { hasWebsiteAccess } from '../lib/capturePermissions';
 import { hasSnippetFields } from '../lib/pasteTools';
 import { sendMessage } from '../lib/runtime';
 import type { Clip, StorageState } from '../lib/types';
@@ -10,7 +12,7 @@ import { TypeGlyph } from './TypeGlyph';
 import './popup.css';
 
 type Toast = { kind: 'success' | 'error'; message: string } | null;
-type CaptureStatus = 'checking' | 'active' | 'disabled' | 'excluded' | 'restricted' | 'unavailable';
+type CaptureStatus = 'checking' | 'active' | 'disabled' | 'permission' | 'excluded' | 'restricted' | 'unavailable';
 type ClipFilter = 'all' | 'text' | 'url' | 'code' | 'favorite';
 
 export function Popup() {
@@ -30,7 +32,7 @@ export function Popup() {
 
   const refresh = useCallback(async () => {
     try {
-      const response = await sendMessage({ type: 'SYNC_COMPANION' });
+      const response = await sendMessage({ type: COMPANION_ENABLED ? 'SYNC_COMPANION' : 'GET_STATE' });
       if (response.state) setState(response.state);
     } catch (error) {
       setToast({ kind: 'error', message: error instanceof Error ? error.message : 'Could not load your clips.' });
@@ -44,6 +46,10 @@ export function Popup() {
       const url = tab?.url ?? '';
       if (!tab?.id || !/^(https?|file):\/\//i.test(url)) {
         setCaptureStatus('restricted');
+        return;
+      }
+      if (!await hasWebsiteAccess()) {
+        setCaptureStatus('permission');
         return;
       }
 
@@ -237,7 +243,7 @@ export function Popup() {
       {captureStatus === 'restricted' && <div className="notice"><span>This browser page cannot be captured. Try a normal website.</span></div>}
       {captureStatus === 'unavailable' && <div className="notice error-notice"><span>Clipboard+ could not access this tab. Check the extension's Site access setting, then refresh the page.</span></div>}
       {captureStatus === 'excluded' && <div className="notice"><span>This site is excluded in Clipboard+ settings.</span></div>}
-      {captureStatus === 'disabled' && <div className="notice"><span>Automatic capture is turned off in Clipboard+ settings.</span></div>}
+      {(captureStatus === 'disabled' || captureStatus === 'permission') && <div className="notice notice-action"><span>Automatic website capture is off.</span><button type="button" onClick={() => void chrome.runtime.openOptionsPage()}>Review & enable</button></div>}
 
       <div className="content-scroll">
         {!state ? (
@@ -246,7 +252,7 @@ export function Popup() {
           <div className="empty-state">
             <span className="empty-icon">{query ? <SearchIcon /> : <ClipboardIcon />}</span>
             <h2>{query || filter !== 'all' ? 'No matching clips' : 'Your clipboard is ready'}</h2>
-            <p>{query || filter !== 'all' ? 'Try another search or filter.' : 'Copy text in any app or add your first clip above.'}</p>
+            <p>{query || filter !== 'all' ? 'Try another search or filter.' : COMPANION_ENABLED ? 'Copy text in any app or add your first clip above.' : 'Add a clip manually or enable website capture in Settings.'}</p>
           </div>
         ) : (
           <>{renderSection('Favorites', favorites, true)}{renderSection('Recent', history)}</>

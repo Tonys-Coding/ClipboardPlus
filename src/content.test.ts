@@ -9,7 +9,19 @@ beforeEach(async () => {
   vi.stubGlobal('chrome', {
     runtime: { sendMessage, onMessage: { addListener: vi.fn() } },
     storage: {
-      local: { get: vi.fn().mockResolvedValue({ [STORAGE_KEY]: DEFAULT_STATE }) },
+      local: {
+        get: vi.fn().mockResolvedValue({
+          [STORAGE_KEY]: {
+            ...DEFAULT_STATE,
+            settings: {
+              ...DEFAULT_STATE.settings,
+              autoCapture: true,
+              captureConsentVersion: 1,
+              captureConsentAt: 1,
+            },
+          },
+        }),
+      },
       onChanged: { addListener: vi.fn() },
     },
   });

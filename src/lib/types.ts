@@ -16,6 +16,8 @@ export interface Settings {
   autoCapture: boolean;
   historyLimit: number;
   excludedSites: string[];
+  captureConsentVersion: number;
+  captureConsentAt?: number;
 }
 
 export interface StorageState {
@@ -41,6 +43,9 @@ export interface RuntimeResponse {
   ok: boolean;
   state?: StorageState;
   error?: string;
+  permissions?: {
+    websiteAccess: boolean;
+  };
   companion?: {
     available: boolean;
     imported: number;
