@@ -1,15 +1,15 @@
 @font-face {
-  font-family: "Syne";
-  src: url("/fonts/Syne-Variable.woff2") format("woff2");
+  font-family: "Satoshi";
+  src: url("/fonts/Satoshi-Variable.woff2") format("woff2");
   font-style: normal;
-  font-weight: 400 800;
+  font-weight: 300 900;
   font-display: swap;
 }
 
 :root {
   color: #f1ede4;
   background: #080808;
-  font-family: "Syne", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: "Satoshi", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-synthesis: none;
   --gold: #e7bc31;
   --gold-bright: #f2ca50;
@@ -21,12 +21,12 @@
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: "Syne", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: "Satoshi", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background:
     radial-gradient(circle at 12% -5%, rgba(231, 188, 49, .1), transparent 26rem),
     #080808;
 }
-button, input, select { font-family: "Syne", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+button, input, select { font-family: "Satoshi", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
 .options-shell { width: min(840px, calc(100% - 40px)); margin: 0 auto; padding: 55px 0 48px; }
 .options-header { display: flex; align-items: center; gap: 17px; margin-bottom: 30px; }

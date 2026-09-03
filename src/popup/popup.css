@@ -1,15 +1,15 @@
 @font-face {
-  font-family: "Syne";
-  src: url("/fonts/Syne-Variable.woff2") format("woff2");
+  font-family: "Satoshi";
+  src: url("/fonts/Satoshi-Variable.woff2") format("woff2");
   font-style: normal;
-  font-weight: 400 800;
+  font-weight: 300 900;
   font-display: swap;
 }
 
 :root {
   color: #f4f0e7;
   background: #090908;
-  font-family: "Syne", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: "Satoshi", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-synthesis: none;
   --carbon: #090908;
   --graphite: #171714;
@@ -23,8 +23,8 @@
 
 * { box-sizing: border-box; }
 html, body, #root { width: 520px; height: 600px; }
-body { margin: 0; overflow: hidden; background: var(--carbon); font-family: "Syne", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-button, input, textarea { font-family: "Syne", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+body { margin: 0; overflow: hidden; background: var(--carbon); font-family: "Satoshi", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+button, input, textarea { font-family: "Satoshi", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 button { color: inherit; }
 button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--brass-bright); outline-offset: 2px; }
 

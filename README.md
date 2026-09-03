@@ -42,7 +42,7 @@ Use the `C+` menu to pause or resume system-wide capture. To remove the companio
 
 Press **Control-Shift-V** from any application to open the native Quick Paste palette. Start typing to search clip content, titles, source applications, and URLs; use the arrow keys to select a result, then press **Return** to paste it into the application you were using. Press **Command-Return** to copy the result without automatically pasting, or **Escape** to close the palette.
 
-Every result shows the copied content as the large primary line. When available, its source website, category, and source application appear below it, so page titles never compete with the value that will actually be pasted. The Chrome popup and native palette share the official logo, bundled Syne font, compact spacing, and flat result-row treatment.
+Every result shows the copied content as the large primary line. When available, its source website, category, and source application appear below it, so page titles never compete with the value that will actually be pasted. The Chrome popup and native palette share the official logo, bundled Satoshi variable font, compact spacing, and flat result-row treatment. Satoshi is supplied by Indian Type Foundry through Fontshare under the included ITF Free Font License.
 
 The first automatic paste asks for Clipboard+ Companion under **System Settings → Privacy & Security → Accessibility**. If permission is declined, Clipboard+ still copies the selected clip so it can be pasted normally. Quick Paste locally mirrors up to 500 clips from Chrome, prioritizing favorites, and also includes new system-wide captures immediately.
 

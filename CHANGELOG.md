@@ -2,6 +2,13 @@
 
 Clipboard+'s Git history was reconstructed from local development milestones after versions 1.0.0 through 1.4.2 had already been built. Those tags preserve the rollout order; their publication timestamps are intentionally not backdated. Releases from 1.5.0 onward follow the live project history.
 
+## 1.5.4
+
+- Replace Syne with the Satoshi variable family throughout the Chrome popup and settings page.
+- Bring the same bundled Satoshi typography to the macOS Quick Paste palette and menu-bar companion.
+- Include the official ITF Free Font License and verify the native font asset during installation.
+- Add browser regression coverage that confirms Satoshi is loaded and applied rather than falling back to a system font.
+
 ## 1.5.3
 
 - Replace the Chrome popup's tall bordered cards and capture rail with compact, flat Quick Paste-style rows.

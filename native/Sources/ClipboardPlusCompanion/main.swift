@@ -14,9 +14,9 @@ if CommandLine.arguments.contains("--check-accessibility") || CommandLine.argume
 
 if CommandLine.arguments.contains("--check-brand-assets") {
     BrandAssets.registerFont()
-    let fontReady = BrandAssets.fontRegistered && BrandAssets.font(size: 12).fontName == "Syne-Regular"
+    let fontReady = BrandAssets.fontRegistered && BrandAssets.font(size: 12).fontName == "SatoshiVariable-Bold_Regular"
     let logoReady = BrandAssets.logo != nil
-    print("font=\(fontReady ? "Syne" : "missing") logo=\(logoReady ? "ready" : "missing")")
+    print("font=\(fontReady ? "Satoshi" : "missing") logo=\(logoReady ? "ready" : "missing")")
     exit(fontReady && logoReady ? 0 : 3)
 }
 

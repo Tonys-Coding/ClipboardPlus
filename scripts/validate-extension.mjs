@@ -26,7 +26,7 @@ const referencedFiles = [
   ...manifest.content_scripts.flatMap((script) => script.js),
   ...Object.values(manifest.icons),
   ...Object.values(manifest.action.default_icon),
-  'fonts/Syne-Variable.woff2',
+  'fonts/Satoshi-Variable.woff2',
   'icons/clipboard-plus-logo.png',
   'icons/type-code.png',
   'icons/type-text.png',

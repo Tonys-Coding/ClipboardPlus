@@ -12,11 +12,11 @@ enum BrandAssets {
 
         var postScriptName: String {
             switch self {
-            case .regular: "Syne-Regular"
-            case .medium: "Syne-Medium"
-            case .semibold: "Syne-SemiBold"
-            case .bold: "Syne-Bold"
-            case .extraBold: "Syne-ExtraBold"
+            case .regular: "SatoshiVariable-Bold_Regular"
+            case .medium: "SatoshiVariable-Bold_Medium"
+            case .semibold: "SatoshiVariable-Bold_Bold"
+            case .bold: "SatoshiVariable-Bold_Bold"
+            case .extraBold: "SatoshiVariable-Bold"
             }
         }
 
@@ -35,10 +35,10 @@ enum BrandAssets {
 
     static func registerFont() {
         guard !fontRegistered,
-              let url = Bundle.main.url(forResource: "Syne-Variable", withExtension: "woff2") else { return }
+              let url = Bundle.main.url(forResource: "Satoshi-Variable", withExtension: "woff2") else { return }
         var registrationError: Unmanaged<CFError>?
         fontRegistered = CTFontManagerRegisterFontsForURL(url as CFURL, .process, &registrationError)
-            || NSFont(name: "Syne-Regular", size: 12) != nil
+            || NSFont(name: "SatoshiVariable-Bold_Regular", size: 12) != nil
     }
 
     static func font(size: CGFloat, weight: Weight = .regular) -> NSFont {

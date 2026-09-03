@@ -59,6 +59,14 @@ try {
     return stored.clipboardPlus?.clips?.length >= 3;
   }, null, { timeout: 10_000 });
 
+  const popupTypography = await extensionPage.evaluate(async () => {
+    await document.fonts.ready;
+    return {
+      family: getComputedStyle(document.body).fontFamily,
+      loaded: document.fonts.check('12px Satoshi'),
+    };
+  });
+
   const result = await extensionPage.evaluate(async () => {
     const stored = await chrome.storage.local.get('clipboardPlus');
     return stored.clipboardPlus;
@@ -69,6 +77,7 @@ try {
   if (!contents.includes('Copied through the copy event')) throw new Error('The copy event was not persisted.');
   if (result.clips.find((clip) => clip.content.startsWith('const captured'))?.type !== 'code') throw new Error('Copied code was not classified as code.');
   if (contents.includes('Never store this password')) throw new Error('A password value was incorrectly persisted.');
+  if (!popupTypography.family.includes('Satoshi') || !popupTypography.loaded) throw new Error('The bundled Satoshi font was not applied.');
   if (pageErrors.length) throw new Error(`Page errors: ${pageErrors.join('; ')}`);
 
   await page.bringToFront();
@@ -77,7 +86,7 @@ try {
   const nativeResult = await extensionPage.evaluate(() => chrome.runtime.sendMessage({ type: 'SYNC_COMPANION' }));
   const nativeMessaging = nativeResult.companion?.available ? 'connected' : 'Chrome for Testing does not read user-level native hosts';
 
-  console.log(JSON.stringify({ extensionId, captured: contents, codeClassified: true, passwordExcluded: true, popupDiagnostic: 'ready', nativeMessaging }, null, 2));
+  console.log(JSON.stringify({ extensionId, captured: contents, codeClassified: true, passwordExcluded: true, popupDiagnostic: 'ready', typography: popupTypography.family, nativeMessaging }, null, 2));
 } finally {
   await context?.close();
   await new Promise((resolveClosed) => server.close(resolveClosed));
