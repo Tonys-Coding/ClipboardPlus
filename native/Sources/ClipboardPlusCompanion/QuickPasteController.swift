@@ -39,7 +39,7 @@ final class ClipRowView: NSTableCellView {
         kindImage.translatesAutoresizingMaskIntoConstraints = false
         kindImage.contentTintColor = NSColor(calibratedRed: 0.91, green: 0.73, blue: 0.18, alpha: 1)
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.font = .systemFont(ofSize: 14, weight: .semibold)
+        titleLabel.font = .systemFont(ofSize: 14, weight: .bold)
         titleLabel.textColor = NSColor(calibratedWhite: 0.94, alpha: 1)
         titleLabel.lineBreakMode = .byTruncatingTail
         detailLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -74,13 +74,8 @@ final class ClipRowView: NSTableCellView {
     required init?(coder: NSCoder) { nil }
 
     func configure(with clip: NativeClip) {
-        let singleLine = clip.content.replacingOccurrences(of: "\n", with: " ")
-        titleLabel.stringValue = clip.title?.isEmpty == false ? clip.title! : singleLine
-        var details: [String] = []
-        if clip.title?.isEmpty == false { details.append(singleLine) }
-        details.append(clip.type.uppercased())
-        if let sourceApp = clip.sourceApp, !sourceApp.isEmpty { details.append(sourceApp) }
-        detailLabel.stringValue = details.joined(separator: "  ·  ")
+        titleLabel.stringValue = ClipPresentation.primaryText(for: clip)
+        detailLabel.stringValue = ClipPresentation.metadata(for: clip).joined(separator: "  ·  ")
         let symbol = clip.type == "url" ? "link" : clip.type == "code" ? "chevron.left.forwardslash.chevron.right" : "doc.text"
         kindImage.image = NSImage(systemSymbolName: symbol, accessibilityDescription: clip.type)
         favoriteImage.image = clip.favorite ? NSImage(systemSymbolName: "star.fill", accessibilityDescription: "Favorite") : nil

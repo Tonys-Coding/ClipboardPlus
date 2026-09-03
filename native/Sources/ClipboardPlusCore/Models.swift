@@ -82,3 +82,26 @@ public enum PaletteSearch {
         }
     }
 }
+
+public enum ClipPresentation {
+    public static func primaryText(for clip: NativeClip) -> String {
+        clip.content
+            .replacingOccurrences(of: "\r\n", with: "\n")
+            .replacingOccurrences(of: "\r", with: "\n")
+            .replacingOccurrences(of: "\n", with: " ")
+    }
+
+    public static func metadata(for clip: NativeClip) -> [String] {
+        var details: [String] = []
+        if let sourceUrl = clip.sourceUrl,
+           let host = URL(string: sourceUrl)?.host?.replacingOccurrences(of: "^www\\.", with: "", options: .regularExpression),
+           !host.isEmpty {
+            details.append(host)
+        }
+        details.append(clip.type.uppercased())
+        if let sourceApp = clip.sourceApp?.trimmingCharacters(in: .whitespacesAndNewlines), !sourceApp.isEmpty {
+            details.append(sourceApp)
+        }
+        return details
+    }
+}

@@ -126,10 +126,7 @@ textarea::placeholder { color: #6f6b64; }
 .type-icon.url { color: var(--brass-bright); border-color: #776426; }
 .type-icon.code { color: #d4c4f2; border-color: #514663; }
 .clip-details { min-width: 0; display: flex; flex: 1; flex-direction: column; gap: 4px; }
-.clip-details strong { max-width: 315px; overflow: hidden; color: var(--parchment); text-overflow: ellipsis; white-space: nowrap; font-size: 11px; letter-spacing: -.01em; }
-.clip-content { max-width: 335px; overflow: hidden; color: #c4c0b7; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; line-height: 1.35; }
-.clip-details strong + .clip-content { color: #9d988f; font-size: 9.5px; }
-.clip-card.code .clip-content { color: #d7d1c7; font-size: 9px; }
+.clip-content { max-width: 335px; overflow: hidden; color: var(--parchment); text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px; font-weight: 750; line-height: 1.35; letter-spacing: -.01em; }
 .clip-meta { display: flex; align-items: center; overflow: hidden; color: #747068; font-size: 8px; white-space: nowrap; }
 .clip-meta span { overflow: hidden; text-overflow: ellipsis; }
 .clip-meta span + span::before { content: "•"; padding: 0 6px; color: #514d45; }

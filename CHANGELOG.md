@@ -2,6 +2,13 @@
 
 Clipboard+'s Git history was reconstructed from local development milestones after versions 1.0.0 through 1.4.2 had already been built. Those tags preserve the rollout order; their publication timestamps are intentionally not backdated. Releases from 1.5.0 onward follow the live project history.
 
+## 1.5.1
+
+- Make the copied content the large, bold primary line in every Chrome and macOS Quick Paste row.
+- Move the source website, clip category, and source application into a consistently ordered secondary line.
+- Keep page titles available to search without allowing them to replace the copied content in the interface.
+- Add regression coverage for browser and native clip presentation.
+
 ## 1.5.0
 
 - Add a global macOS Quick Paste palette opened with Control-Shift-V.

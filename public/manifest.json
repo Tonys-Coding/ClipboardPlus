@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Clipboard+",
   "description": "A fast, private clipboard history and Quick Paste workflow for Chrome and macOS.",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "permissions": ["storage", "activeTab", "clipboardWrite", "scripting", "contextMenus", "nativeMessaging"],
   "host_permissions": ["<all_urls>"],
   "incognito": "not_allowed",

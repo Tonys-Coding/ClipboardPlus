@@ -12,11 +12,12 @@ interface ClipCardProps {
   onDelete: (clip: Clip) => void;
 }
 
-function urlHost(content: string): string {
+function sourceHost(sourceUrl: string | undefined): string | null {
+  if (!sourceUrl) return null;
   try {
-    return new URL(content).hostname.replace(/^www\./, '');
+    return new URL(sourceUrl).hostname.replace(/^www\./, '');
   } catch {
-    return content;
+    return null;
   }
 }
 
@@ -37,6 +38,7 @@ export function ClipCard({ clip, copied, onCopy, onEdit, onFavorite, onDelete }:
   const [menuDirection, setMenuDirection] = useState<'down' | 'up'>('down');
   const menuRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const source = sourceHost(clip.sourceUrl);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -49,17 +51,17 @@ export function ClipCard({ clip, copied, onCopy, onEdit, onFavorite, onDelete }:
 
   return (
     <article className={`clip-card ${clip.type} ${copied ? 'is-copied' : ''} ${menuOpen ? 'menu-open' : ''}`}>
-      <button className="clip-copy" type="button" onClick={() => onCopy(clip)} aria-label={`Copy ${clip.title || clip.content}`}>
+      <button className="clip-copy" type="button" onClick={() => onCopy(clip)} aria-label={`Copy ${clip.content}`}>
         <span className={`type-icon ${clip.type}`} title={`${clip.type[0].toUpperCase()}${clip.type.slice(1)} clip`}>
           <TypeGlyph type={clip.type} />
         </span>
         <span className="clip-details">
-          {clip.type === 'url' && <strong>{clip.title || urlHost(clip.content)}</strong>}
-          <span className="clip-content">{clip.content}</span>
+          <strong className="clip-content" title={clip.content}>{clip.content}</strong>
           <span className="clip-meta">
-            <span>{relativeTime(clip.updatedAt)}</span>
-            {clip.type === 'url' && <span>{urlHost(clip.content)}</span>}
+            {source && <span>{source}</span>}
+            <span>{clip.type.toUpperCase()}</span>
             {clip.sourceApp && <span>{clip.sourceApp}</span>}
+            <span>{relativeTime(clip.updatedAt)}</span>
           </span>
         </span>
         {copied && <span className="copied-label">Copied</span>}

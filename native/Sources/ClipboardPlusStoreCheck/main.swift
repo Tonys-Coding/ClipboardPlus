@@ -39,6 +39,21 @@ do {
           PaletteSearch.filter(paletteHistory, query: " RECENT ").map(\.id) == ["recent"] else {
         throw NSError(domain: "ClipboardPlusStoreCheck", code: 6, userInfo: [NSLocalizedDescriptionKey: "Palette search failed."])
     }
+
+    let presented = NativeClip(
+        id: "presented",
+        type: "text",
+        content: "some\ntext",
+        title: "Google Search",
+        sourceUrl: "https://www.google.com/search?q=some+text",
+        sourceApp: " Google Chrome ",
+        createdAt: now,
+        updatedAt: now
+    )
+    guard ClipPresentation.primaryText(for: presented) == "some text",
+          ClipPresentation.metadata(for: presented) == ["google.com", "TEXT", "Google Chrome"] else {
+        throw NSError(domain: "ClipboardPlusStoreCheck", code: 7, userInfo: [NSLocalizedDescriptionKey: "Clip presentation hierarchy failed."])
+    }
     print("Clipboard+ companion store checks passed.")
 } catch {
     FileHandle.standardError.write(Data("Store check failed: \(error.localizedDescription)\n".utf8))

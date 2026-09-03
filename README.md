@@ -22,6 +22,8 @@ npm run test:e2e
 npm run test:native
 ```
 
+Final releases update the extension, package, native bundle, README, and changelog versions together; each verified version is committed, annotated with a matching tag, pushed to `main`, and published as a GitHub Release.
+
 ## macOS companion
 
 Install and start universal capture with:
@@ -37,6 +39,8 @@ Use the `C+` menu to pause or resume system-wide capture. To remove the companio
 ### Quick Paste
 
 Press **Control-Shift-V** from any application to open the native Quick Paste palette. Start typing to search clip content, titles, source applications, and URLs; use the arrow keys to select a result, then press **Return** to paste it into the application you were using. Press **Command-Return** to copy the result without automatically pasting, or **Escape** to close the palette.
+
+Every result shows the copied content as the large primary line. When available, its source website, category, and source application appear below it, so page titles never compete with the value that will actually be pasted.
 
 The first automatic paste asks for Clipboard+ Companion under **System Settings → Privacy & Security → Accessibility**. If permission is declined, Clipboard+ still copies the selected clip so it can be pasted normally. Quick Paste locally mirrors up to 500 clips from Chrome, prioritizing favorites, and also includes new system-wide captures immediately.
 

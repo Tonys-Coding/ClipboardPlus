@@ -11,8 +11,8 @@ const state: StorageState = {
   version: 2,
   settings: { autoCapture: true, historyLimit: 500, excludedSites: [] },
   clips: [
-    { id: 'recent', type: 'text', content: 'Recent note', favorite: false, createdAt: 2, updatedAt: 2 },
-    { id: 'favorite', type: 'url', content: 'https://example.com', title: 'Example home', favorite: true, createdAt: 1, updatedAt: 1 },
+    { id: 'recent', type: 'text', content: 'Recent note', title: 'A misleading page title', sourceUrl: 'https://www.google.com/search?q=recent', sourceApp: 'Google Chrome', favorite: false, createdAt: 2, updatedAt: 2 },
+    { id: 'favorite', type: 'url', content: 'https://example.com', title: 'Example home', sourceUrl: 'https://chatgpt.com/c/example', sourceApp: 'Google Chrome', favorite: true, createdAt: 1, updatedAt: 1 },
     { id: 'code', type: 'code', content: 'const answer = 42;', favorite: false, createdAt: 0, updatedAt: 0 },
   ],
 };
@@ -41,9 +41,21 @@ describe('Clipboard+ popup', () => {
     expect(screen.getByText('Recent')).toBeInTheDocument();
     expect(await screen.findByRole('textbox', { name: 'Search clips' })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /copy example home/i }));
+    await user.click(screen.getByRole('button', { name: /copy https:\/\/example\.com/i }));
     expect(clipboardWrite).toHaveBeenCalledWith('https://example.com');
     expect(await screen.findByText('Copied')).toBeInTheDocument();
+
+    const recentCard = screen.getByText('Recent note').closest('article')!;
+    expect(within(recentCard).getByText('Recent note')).toHaveClass('clip-content');
+    expect(within(recentCard).getByText('google.com')).toBeInTheDocument();
+    expect(within(recentCard).getByText('TEXT')).toBeInTheDocument();
+    expect(within(recentCard).getByText('Google Chrome')).toBeInTheDocument();
+    expect(screen.queryByText('A misleading page title')).not.toBeInTheDocument();
+
+    await user.type(screen.getByRole('textbox', { name: 'Search clips' }), 'Example home');
+    expect(screen.getByText('https://example.com')).toBeInTheDocument();
+    expect(screen.queryByText('Example home')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Clear search' }));
 
     await user.type(screen.getByRole('textbox', { name: 'Search clips' }), 'note');
     expect(screen.queryByText('Example home')).not.toBeInTheDocument();
@@ -51,11 +63,13 @@ describe('Clipboard+ popup', () => {
 
     await user.click(screen.getByRole('button', { name: 'Clear search' }));
     await user.click(screen.getByRole('button', { name: 'Links' }));
-    expect(screen.getByText('Example home')).toBeInTheDocument();
+    expect(screen.getByText('https://example.com')).toBeInTheDocument();
+    expect(screen.getByText('chatgpt.com')).toBeInTheDocument();
+    expect(screen.getByText('URL')).toBeInTheDocument();
     expect(screen.queryByText('Recent note')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Text' }));
-    expect(screen.queryByText('Example home')).not.toBeInTheDocument();
+    expect(screen.queryByText('https://example.com')).not.toBeInTheDocument();
     expect(screen.getByText('Recent note')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Code' }));
@@ -95,7 +109,7 @@ describe('Clipboard+ popup', () => {
     await user.clear(editBox);
     await user.type(editBox, 'Edited note');
     await user.click(screen.getByRole('button', { name: /save changes/i }));
-    expect(mockedSend).toHaveBeenCalledWith({ type: 'UPDATE_CLIP', payload: { id: 'recent', content: 'Edited note', title: undefined } });
+    expect(mockedSend).toHaveBeenCalledWith({ type: 'UPDATE_CLIP', payload: { id: 'recent', content: 'Edited note', title: 'A misleading page title' } });
 
     await user.click(within(recentCard).getByRole('button', { name: 'Clip actions' }));
     await user.click(screen.getByRole('menuitem', { name: 'Delete' }));
