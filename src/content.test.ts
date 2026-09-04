@@ -38,7 +38,7 @@ describe('web copy capture', () => {
     textarea.dispatchEvent(new Event('copy', { bubbles: true }));
 
     expect(sendMessage).toHaveBeenCalledWith({
-      type: 'ADD_CLIP',
+      type: 'CAPTURE_CLIP',
       payload: {
         content: 'copy this text',
         title: undefined,

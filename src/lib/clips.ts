@@ -1,4 +1,4 @@
-import type { AddClipInput, Clip, ClipType, Settings, StorageState } from './types';
+import type { AddClipInput, Clip, ClipType, RetentionDays, Settings, StorageState } from './types';
 
 export const STORAGE_KEY = 'clipboardPlus';
 export const MAX_CLIP_LENGTH = 50_000;
@@ -7,7 +7,14 @@ export const CAPTURE_CONSENT_VERSION = 1;
 export const DEFAULT_SETTINGS: Settings = {
   autoCapture: false,
   historyLimit: 500,
+  retentionDays: 0,
   excludedSites: [],
+  captureTypes: ['text', 'url', 'code'],
+  capturePaused: false,
+  capturePausedUntil: null,
+  capturePageTitle: true,
+  captureSourceUrl: true,
+  captureSourceApp: true,
   captureConsentVersion: 0,
 };
 
@@ -83,6 +90,47 @@ export function pruneClips(clips: Clip[], limit: number): Clip[] {
   return [...favorites, ...history].sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
+export function pruneExpiredClips(clips: Clip[], retentionDays: RetentionDays, now = Date.now()): Clip[] {
+  if (retentionDays === 0) return clips;
+  const cutoff = now - retentionDays * 24 * 60 * 60 * 1000;
+  return clips.filter((clip) => clip.favorite || clip.updatedAt >= cutoff);
+}
+
+export function captureIsPaused(settings: Settings, now = Date.now()): boolean {
+  if (!settings.capturePaused) return false;
+  return settings.capturePausedUntil === null || settings.capturePausedUntil > now;
+}
+
+export function maintainState(state: StorageState, now = Date.now()): StorageState {
+  const pauseExpired = state.settings.capturePaused
+    && state.settings.capturePausedUntil !== null
+    && state.settings.capturePausedUntil <= now;
+  const settings = pauseExpired
+    ? { ...state.settings, capturePaused: false, capturePausedUntil: null }
+    : state.settings;
+  const clips = pruneClips(
+    pruneExpiredClips(state.clips, settings.retentionDays, now),
+    settings.historyLimit,
+  );
+  return { ...state, settings, clips };
+}
+
+export function prepareCapturedClip(
+  settings: Settings,
+  input: AddClipInput,
+  now = Date.now(),
+): AddClipInput | null {
+  if (!settings.autoCapture || captureIsPaused(settings, now)) return null;
+  const content = normalizeContent(input.content);
+  if (!content || !settings.captureTypes.includes(detectClipType(content))) return null;
+  return {
+    content,
+    title: settings.capturePageTitle ? input.title : undefined,
+    sourceUrl: settings.captureSourceUrl ? input.sourceUrl : undefined,
+    sourceApp: settings.captureSourceApp ? input.sourceApp : undefined,
+  };
+}
+
 export function addClip(
   state: StorageState,
   input: AddClipInput,
@@ -132,7 +180,13 @@ export function migrateState(value: unknown): StorageState {
   const hasCurrentConsent = typeof storedSettings.captureConsentVersion === 'number'
     && storedSettings.captureConsentVersion >= CAPTURE_CONSENT_VERSION
     && typeof storedSettings.captureConsentAt === 'number';
-  return {
+  const retentionDays = [0, 1, 7, 30, 90].includes(Number(storedSettings.retentionDays))
+    ? Number(storedSettings.retentionDays) as RetentionDays
+    : DEFAULT_SETTINGS.retentionDays;
+  const captureTypes = Array.isArray(storedSettings.captureTypes)
+    ? [...new Set(storedSettings.captureTypes.filter((type): type is ClipType => ['text', 'url', 'code'].includes(type)))]
+    : DEFAULT_SETTINGS.captureTypes;
+  return maintainState({
     version: 2,
     clips: Array.isArray(candidate.clips)
       ? candidate.clips.map((clip) => ({
@@ -146,11 +200,20 @@ export function migrateState(value: unknown): StorageState {
       ...DEFAULT_SETTINGS,
       ...storedSettings,
       autoCapture: hasCurrentConsent && storedSettings.autoCapture === true,
+      retentionDays,
       excludedSites: Array.isArray(candidate.settings?.excludedSites)
         ? candidate.settings.excludedSites
         : [],
+      captureTypes: captureTypes.length ? captureTypes : DEFAULT_SETTINGS.captureTypes,
+      capturePaused: storedSettings.capturePaused === true,
+      capturePausedUntil: typeof storedSettings.capturePausedUntil === 'number'
+        ? storedSettings.capturePausedUntil
+        : null,
+      capturePageTitle: storedSettings.capturePageTitle !== false,
+      captureSourceUrl: storedSettings.captureSourceUrl !== false,
+      captureSourceApp: storedSettings.captureSourceApp !== false,
     },
-  };
+  });
 }
 
 export function filterClips(clips: Clip[], query: string): Clip[] {

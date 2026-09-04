@@ -22,3 +22,5 @@ export const EditIcon = (props: IconProps) => <IconBase {...props}><path d="M12 
 export const WandIcon = (props: IconProps) => <IconBase {...props}><path d="m15 4 5 5L9 20H4v-5L15 4ZM12.5 6.5l5 5M5 4v3M3.5 5.5h3M19 16v4M17 18h4" /></IconBase>;
 export const CheckIcon = (props: IconProps) => <IconBase {...props}><path d="m5 12 4 4L19 6" /></IconBase>;
 export const XIcon = (props: IconProps) => <IconBase {...props}><path d="M6 6l12 12M18 6 6 18" /></IconBase>;
+export const PauseIcon = (props: IconProps) => <IconBase {...props}><path d="M9 5v14M15 5v14" /></IconBase>;
+export const PlayIcon = (props: IconProps) => <IconBase {...props}><path d="m8 5 11 7-11 7V5Z" /></IconBase>;

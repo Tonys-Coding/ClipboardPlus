@@ -28,6 +28,10 @@ try {
     manifest: chrome.runtime.getManifest(),
   }));
   if (initial.state.settings.autoCapture !== false) throw new Error('Fresh store installs must not capture automatically.');
+  if (initial.state.settings.retentionDays !== 0) throw new Error('Fresh store installs must keep clips indefinitely by default.');
+  if (initial.state.settings.captureTypes.join(',') !== 'text,url,code') throw new Error('Fresh store installs must enable all automatic capture categories.');
+  if (initial.state.settings.capturePaused !== false) throw new Error('Fresh store installs must not begin paused.');
+  if (!initial.state.settings.capturePageTitle || !initial.state.settings.captureSourceUrl || !initial.state.settings.captureSourceApp) throw new Error('Fresh store installs must preserve existing source metadata behavior.');
   if (initial.allowed.origins?.length) throw new Error('Fresh store installs must not have website access.');
   if (initial.registrations.length) throw new Error('Fresh store installs must not register a content script.');
   if (initial.manifest.permissions?.includes('nativeMessaging')) throw new Error('The store manifest includes Native Messaging.');
@@ -49,6 +53,7 @@ try {
     websiteOrigins: 0,
     registeredContentScripts: 0,
     nativeMessaging: false,
+    freePrivacyControls: true,
     manualClip: true,
   }, null, 2));
 } finally {

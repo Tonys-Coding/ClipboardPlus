@@ -30,7 +30,7 @@ Final releases update the extension, package, native bundle, README, and changel
 
 ## macOS companion
 
-The companion is currently a developer preview and is not included or advertised as available in the v1.6.3 Chrome Web Store package. It remains part of the permanent free v1.6 feature set and will return to the public interface after Apple signing, notarization, and consumer installation are complete.
+The companion is currently a developer preview and is not included or advertised as available in the v1.7.0 Chrome Web Store package. It remains part of the permanent free feature set and will return to the public interface after Apple signing, notarization, and consumer installation are complete.
 
 Install and start universal capture with:
 
@@ -75,7 +75,7 @@ The public [privacy policy](https://tonys-coding.github.io/ClipboardPlus/privacy
 - Use **Add clip** for manual text and URLs, or **Save tab** to store the current page.
 - Press **Control-Shift-V** to search and paste from any macOS application.
 - On a webpage, right-click selected text or a link and use the dedicated **Save … to Clipboard+** action for a guaranteed capture path.
-- Open Settings to pause capture, exclude domains, change the history limit, or clear saved data.
+- Open Settings to pause capture, select automatic-capture categories, control source metadata, exclude domains, set history retention, review local storage usage, or clear saved data.
 
 ## Capture troubleshooting
 
@@ -91,4 +91,4 @@ Developer-account registration, two-step verification, trader classification, an
 
 ## Monetization boundary
 
-Everything included through v1.6 remains free. Bug fixes, security updates, privacy work, and browser compatibility are not paid upgrades. A future Pro launch is gated on public demand and is planned around end-to-end encrypted cross-device sync, folders or sessions, backup and restore, and device management. The target launch price is $3.99 monthly or $29.99 yearly with a 14-day no-card trial; no billing or account code exists in v1.6.3.
+Everything included through v1.7.0 remains free. Bug fixes, security updates, privacy controls, accessibility, data ownership, and browser compatibility are not paid upgrades. A future Pro launch is gated on public demand and is planned around end-to-end encrypted cross-device sync, folders or sessions, encrypted backup and restore, and device management. The target launch price is $3.99 monthly or $29.99 yearly with a 14-day no-card trial; no billing or account code exists in v1.7.0.

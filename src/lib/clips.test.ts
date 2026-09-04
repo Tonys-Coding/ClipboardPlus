@@ -5,12 +5,15 @@ import {
   detectClipType,
   filterClips,
   isHostExcluded,
+  maintainState,
   migrateState,
   normalizeContent,
   normalizeHostname,
+  prepareCapturedClip,
   pruneClips,
+  pruneExpiredClips,
 } from './clips';
-import type { Clip, StorageState } from './types';
+import type { Clip, Settings, StorageState } from './types';
 
 const makeClip = (id: string, favorite: boolean, updatedAt: number): Clip => ({
   id,
@@ -44,6 +47,40 @@ describe('clip behavior', () => {
   it('prunes only non-favorites and keeps newest history', () => {
     const clips = [makeClip('old', false, 1), makeClip('favorite', true, 2), makeClip('new', false, 3)];
     expect(pruneClips(clips, 1).map((clip) => clip.id)).toEqual(['new', 'favorite']);
+  });
+
+  it('expires old non-favorites while preserving favorites', () => {
+    const day = 24 * 60 * 60 * 1000;
+    const clips = [makeClip('old', false, day), makeClip('favorite', true, day), makeClip('recent', false, day * 4)];
+    expect(pruneExpiredClips(clips, 1, day * 5).map((clip) => clip.id)).toEqual(['favorite', 'recent']);
+    expect(pruneExpiredClips(clips, 0, day * 5)).toEqual(clips);
+  });
+
+  it('resumes an elapsed capture pause during maintenance', () => {
+    const state = maintainState({
+      ...DEFAULT_STATE,
+      settings: { ...DEFAULT_STATE.settings, capturePaused: true, capturePausedUntil: 100 },
+    }, 101);
+    expect(state.settings).toMatchObject({ capturePaused: false, capturePausedUntil: null });
+  });
+
+  it('filters automatic categories and optional source metadata', () => {
+    const settings: Settings = {
+      ...DEFAULT_STATE.settings,
+      autoCapture: true,
+      captureConsentVersion: 1,
+      captureConsentAt: 1,
+      captureTypes: ['url'],
+      capturePageTitle: false,
+      captureSourceApp: false,
+    };
+    expect(prepareCapturedClip(settings, { content: 'ordinary text', title: 'Page' })).toBeNull();
+    expect(prepareCapturedClip(settings, {
+      content: 'https://example.com',
+      title: 'Page',
+      sourceUrl: 'https://source.test/page',
+      sourceApp: 'Google Chrome',
+    })).toEqual({ content: 'https://example.com', title: undefined, sourceUrl: 'https://source.test/page', sourceApp: undefined });
   });
 
   it('migrates missing settings and reclassifies legacy clips', () => {

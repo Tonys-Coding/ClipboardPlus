@@ -1,9 +1,12 @@
-import { DEFAULT_STATE, STORAGE_KEY, migrateState } from './clips';
+import { DEFAULT_STATE, STORAGE_KEY, maintainState, migrateState } from './clips';
 import type { StorageState } from './types';
 
 export async function readState(): Promise<StorageState> {
   const stored = await chrome.storage.local.get(STORAGE_KEY);
-  return migrateState(stored[STORAGE_KEY] ?? DEFAULT_STATE);
+  const source = stored[STORAGE_KEY] ?? DEFAULT_STATE;
+  const state = maintainState(migrateState(source));
+  if (JSON.stringify(source) !== JSON.stringify(state)) await writeState(state);
+  return state;
 }
 
 export async function writeState(state: StorageState): Promise<void> {

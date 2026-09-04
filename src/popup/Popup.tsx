@@ -1,6 +1,6 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CheckIcon, ClipboardIcon, LinkIcon, PlusIcon, SearchIcon, SettingsIcon, StarIcon, XIcon } from '../components/Icons';
-import { filterClips, STORAGE_KEY } from '../lib/clips';
+import { CheckIcon, ClipboardIcon, LinkIcon, PauseIcon, PlayIcon, PlusIcon, SearchIcon, SettingsIcon, StarIcon, XIcon } from '../components/Icons';
+import { captureIsPaused, filterClips, STORAGE_KEY } from '../lib/clips';
 import { COMPANION_ENABLED } from '../lib/build';
 import { hasWebsiteAccess } from '../lib/capturePermissions';
 import { hasSnippetFields } from '../lib/pasteTools';
@@ -12,7 +12,7 @@ import { TypeGlyph } from './TypeGlyph';
 import './popup.css';
 
 type Toast = { kind: 'success' | 'error'; message: string } | null;
-type CaptureStatus = 'checking' | 'active' | 'disabled' | 'permission' | 'excluded' | 'restricted' | 'unavailable';
+type CaptureStatus = 'checking' | 'active' | 'paused' | 'disabled' | 'permission' | 'excluded' | 'restricted' | 'unavailable';
 type ClipFilter = 'all' | 'text' | 'url' | 'code' | 'favorite';
 
 export function Popup() {
@@ -57,6 +57,7 @@ export function Popup() {
         ready: boolean;
         settingsLoaded: boolean;
         enabled: boolean;
+        paused: boolean;
         excluded: boolean;
       }>;
 
@@ -69,7 +70,7 @@ export function Popup() {
           await new Promise((resolve) => window.setTimeout(resolve, 100));
           response = await ping();
         }
-        setCaptureStatus(response.excluded ? 'excluded' : response.enabled ? 'active' : 'disabled');
+        setCaptureStatus(response.excluded ? 'excluded' : response.paused ? 'paused' : response.enabled ? 'active' : 'disabled');
       } catch {
         setCaptureStatus('unavailable');
       }
@@ -121,6 +122,7 @@ export function Popup() {
   }, [state?.clips]);
   const favorites = visible.filter((clip) => clip.favorite);
   const history = visible.filter((clip) => !clip.favorite);
+  const capturePaused = state ? captureIsPaused(state.settings) : false;
 
   const copyText = async (content: string, clip: Clip, successMessage?: string): Promise<boolean> => {
     try {
@@ -176,6 +178,15 @@ export function Popup() {
     if (await perform({ type: 'UPDATE_CLIP', payload: { id: editing.id, content: editDraft, title: editing.title } }, 'Clip updated')) setEditing(null);
   };
 
+  const toggleQuickPause = async () => {
+    if (!state) return;
+    if (capturePaused) {
+      if (await perform({ type: 'UPDATE_SETTINGS', payload: { capturePaused: false, capturePausedUntil: null } }, 'Website capture resumed')) setCaptureStatus('active');
+      return;
+    }
+    if (await perform({ type: 'UPDATE_SETTINGS', payload: { capturePaused: true, capturePausedUntil: Date.now() + 60 * 60 * 1000 } }, 'Website capture paused for one hour')) setCaptureStatus('paused');
+  };
+
   const renderSection = (title: string, clips: Clip[], favorite = false) => {
     if (!clips.length) return null;
     return (
@@ -209,7 +220,10 @@ export function Popup() {
           <img className="brand-mark" src="/icons/clipboard-plus-logo.png" alt="" />
           <span>Clipboard<strong>+</strong></span>
         </div>
-        <button className="icon-button" type="button" aria-label="Open settings" onClick={() => void chrome.runtime.openOptionsPage()}><SettingsIcon /></button>
+        <div className="header-actions">
+          {state?.settings.autoCapture && <button className={`icon-button privacy-button ${capturePaused ? 'active' : ''}`} type="button" aria-label={capturePaused ? 'Resume automatic web capture' : 'Pause automatic web capture for one hour'} onClick={() => void toggleQuickPause()}>{capturePaused ? <PlayIcon /> : <PauseIcon />}</button>}
+          <button className="icon-button" type="button" aria-label="Open settings" onClick={() => void chrome.runtime.openOptionsPage()}><SettingsIcon /></button>
+        </div>
       </header>
 
       <div className="command-row">
@@ -243,7 +257,8 @@ export function Popup() {
       {captureStatus === 'restricted' && <div className="notice"><span>This browser page cannot be captured. Try a normal website.</span></div>}
       {captureStatus === 'unavailable' && <div className="notice error-notice"><span>Clipboard+ could not access this tab. Check the extension's Site access setting, then refresh the page.</span></div>}
       {captureStatus === 'excluded' && <div className="notice"><span>This site is excluded in Clipboard+ settings.</span></div>}
-      {(captureStatus === 'disabled' || captureStatus === 'permission') && <div className="notice notice-action"><span>Automatic website capture is off.</span><button type="button" onClick={() => void chrome.runtime.openOptionsPage()}>Review & enable</button></div>}
+      {(capturePaused || captureStatus === 'paused') && <div className="notice notice-action pause-notice"><span>Automatic website capture is paused.</span><button type="button" onClick={() => void toggleQuickPause()}>Resume</button></div>}
+      {!capturePaused && (captureStatus === 'disabled' || captureStatus === 'permission') && <div className="notice notice-action"><span>Automatic website capture is off.</span><button type="button" onClick={() => void chrome.runtime.openOptionsPage()}>Review & enable</button></div>}
 
       <div className="content-scroll">
         {!state ? (

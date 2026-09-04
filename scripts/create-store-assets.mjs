@@ -71,13 +71,7 @@ try {
 
   const options = await context.newPage();
   await options.goto(`chrome-extension://${extensionId}/options.html`);
-  await options.evaluate(async () => {
-    const stored = await chrome.storage.local.get('clipboardPlus');
-    stored.clipboardPlus.settings = { ...stored.clipboardPlus.settings, captureConsentVersion: 0, captureConsentAt: undefined, autoCapture: false };
-    await chrome.storage.local.set(stored);
-  });
-  await options.reload();
-  await options.getByText('Enable automatic website capture?').waitFor();
+  await options.getByText('Automatic cleanup').waitFor();
   await options.screenshot({ path: resolve(output, 'screenshot-5-privacy-controls.png'), fullPage: false });
   await options.close();
 

@@ -1,4 +1,4 @@
-import { STORAGE_KEY, isHostExcluded, migrateState, normalizeContent } from './lib/clips';
+import { STORAGE_KEY, captureIsPaused, isHostExcluded, migrateState, normalizeContent } from './lib/clips';
 import type { Settings } from './lib/types';
 
 const SENSITIVE_AUTOCOMPLETE = new Set([
@@ -59,18 +59,19 @@ function initializeCapture(): void {
       ready: true,
       settingsLoaded: settings !== null,
       enabled: settings?.autoCapture ?? false,
+      paused: settings ? captureIsPaused(settings) : false,
       excluded: settings ? isHostExcluded(location.hostname, settings.excludedSites) : false,
     });
   });
 
   document.addEventListener('copy', (event) => {
-    if (!settings?.autoCapture || isHostExcluded(location.hostname, settings.excludedSites)) return;
+    if (!settings?.autoCapture || captureIsPaused(settings) || isHostExcluded(location.hostname, settings.excludedSites)) return;
     const target = event.target instanceof Element ? event.target : document.activeElement;
     if (inputIsSensitive(target)) return;
     const content = normalizeContent(selectedText(event));
     if (!content) return;
     void chrome.runtime.sendMessage({
-      type: 'ADD_CLIP',
+      type: 'CAPTURE_CLIP',
       payload: { content, title: document.title || undefined, sourceUrl: location.href },
     });
   });

@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { DEFAULT_SETTINGS } from '../lib/clips';
 import { sendMessage } from '../lib/runtime';
 import type { StorageState } from '../lib/types';
 import { Options } from './Options';
@@ -10,7 +11,7 @@ vi.mock('../lib/runtime', () => ({ sendMessage: vi.fn() }));
 const state: StorageState = {
   version: 2,
   clips: [],
-  settings: { autoCapture: true, historyLimit: 500, excludedSites: [], captureConsentVersion: 1, captureConsentAt: 1 },
+  settings: { ...DEFAULT_SETTINGS, autoCapture: true, captureConsentVersion: 1, captureConsentAt: 1 },
 };
 
 describe('Options', () => {
@@ -30,7 +31,7 @@ describe('Options', () => {
     const user = userEvent.setup();
     render(<Options />);
     await screen.findByText('Automatic web capture');
-    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('checkbox', { name: 'Automatic web capture' }));
     expect(sendMessage).toHaveBeenCalledWith({ type: 'UPDATE_SETTINGS', payload: { autoCapture: false } });
     expect(chrome.permissions.remove).toHaveBeenCalled();
 
@@ -92,5 +93,27 @@ describe('Options', () => {
     fireEvent(window, pointerMove);
     expect(document.documentElement.style.getPropertyValue('--spotlight-x')).toBe('320px');
     expect(document.documentElement.style.getPropertyValue('--spotlight-y')).toBe('480px');
+  });
+
+  it('updates retention, capture categories, privacy pause, and source details', async () => {
+    const user = userEvent.setup();
+    render(<Options />);
+    await screen.findByText('Storage overview');
+
+    await user.selectOptions(screen.getByLabelText('Automatic cleanup'), '30');
+    expect(sendMessage).toHaveBeenCalledWith({ type: 'UPDATE_SETTINGS', payload: { retentionDays: 30 } });
+
+    await user.click(screen.getByText('Complete web addresses').closest('label')!);
+    expect(sendMessage).toHaveBeenCalledWith({ type: 'UPDATE_SETTINGS', payload: { captureTypes: ['text', 'code'] } });
+
+    await user.click(screen.getByRole('checkbox', { name: /Website source/ }));
+    expect(sendMessage).toHaveBeenCalledWith({ type: 'UPDATE_SETTINGS', payload: { captureSourceUrl: false } });
+
+    await user.click(screen.getByRole('button', { name: 'Pause capture' }));
+    expect(sendMessage).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'UPDATE_SETTINGS',
+      payload: expect.objectContaining({ capturePaused: true, capturePausedUntil: expect.any(Number) }),
+    }));
+    expect(screen.getByText('Approx. usage')).toBeInTheDocument();
   });
 });

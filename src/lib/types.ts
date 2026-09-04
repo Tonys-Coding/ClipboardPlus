@@ -1,4 +1,5 @@
 export type ClipType = 'text' | 'url' | 'code';
+export type RetentionDays = 0 | 1 | 7 | 30 | 90;
 
 export interface Clip {
   id: string;
@@ -15,7 +16,14 @@ export interface Clip {
 export interface Settings {
   autoCapture: boolean;
   historyLimit: number;
+  retentionDays: RetentionDays;
   excludedSites: string[];
+  captureTypes: ClipType[];
+  capturePaused: boolean;
+  capturePausedUntil: number | null;
+  capturePageTitle: boolean;
+  captureSourceUrl: boolean;
+  captureSourceApp: boolean;
   captureConsentVersion: number;
   captureConsentAt?: number;
 }
@@ -32,6 +40,7 @@ export type RuntimeMessage =
   | { type: 'GET_STATE' }
   | { type: 'SYNC_COMPANION' }
   | { type: 'ADD_CLIP'; payload: AddClipInput }
+  | { type: 'CAPTURE_CLIP'; payload: AddClipInput }
   | { type: 'UPDATE_CLIP'; payload: { id: string; content: string; title?: string } }
   | { type: 'TOGGLE_FAVORITE'; payload: { id: string } }
   | { type: 'DELETE_CLIP'; payload: { id: string } }

@@ -1,6 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { DEFAULT_SETTINGS } from '../lib/clips';
 import type { StorageState } from '../lib/types';
 import { sendMessage } from '../lib/runtime';
 import { Popup } from './Popup';
@@ -9,7 +10,7 @@ vi.mock('../lib/runtime', () => ({ sendMessage: vi.fn() }));
 
 const state: StorageState = {
   version: 2,
-  settings: { autoCapture: true, historyLimit: 500, excludedSites: [], captureConsentVersion: 1, captureConsentAt: 1 },
+  settings: { ...DEFAULT_SETTINGS, autoCapture: true, captureConsentVersion: 1, captureConsentAt: 1 },
   clips: [
     { id: 'recent', type: 'text', content: 'Recent note', title: 'A misleading page title', sourceUrl: 'https://www.google.com/search?q=recent', sourceApp: 'Google Chrome', favorite: false, createdAt: 2, updatedAt: 2 },
     { id: 'favorite', type: 'url', content: 'https://example.com', title: 'Example home', sourceUrl: 'https://chatgpt.com/c/example', sourceApp: 'Google Chrome', favorite: true, createdAt: 1, updatedAt: 1 },
@@ -25,7 +26,7 @@ beforeEach(() => {
   vi.stubGlobal('chrome', {
     tabs: {
       query: vi.fn().mockResolvedValue([{ id: 1, url: 'https://current.test', title: 'Current tab' }]),
-      sendMessage: vi.fn().mockResolvedValue({ ready: true, settingsLoaded: true, enabled: true, excluded: false }),
+      sendMessage: vi.fn().mockResolvedValue({ ready: true, settingsLoaded: true, enabled: true, paused: false, excluded: false }),
     },
     scripting: { executeScript: vi.fn().mockResolvedValue([]) },
     permissions: { contains: vi.fn().mockResolvedValue(true) },
@@ -173,5 +174,16 @@ describe('Clipboard+ popup', () => {
     render(<Popup />);
     expect(await screen.findByText('Automatic website capture is off.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Review & enable' })).toBeInTheDocument();
+  });
+
+  it('offers a one-hour privacy pause from the popup header', async () => {
+    const user = userEvent.setup();
+    render(<Popup />);
+    await user.click(await screen.findByRole('button', { name: 'Pause automatic web capture for one hour' }));
+    expect(mockedSend).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'UPDATE_SETTINGS',
+      payload: expect.objectContaining({ capturePaused: true, capturePausedUntil: expect.any(Number) }),
+    }));
+    expect(await screen.findByText('Automatic website capture is paused.')).toBeInTheDocument();
   });
 });

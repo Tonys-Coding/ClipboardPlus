@@ -2,6 +2,15 @@
 
 Clipboard+'s Git history was reconstructed from local development milestones after versions 1.0.0 through 1.4.2 had already been built. Those tags preserve the rollout order; their publication timestamps are intentionally not backdated. Releases from 1.5.0 onward follow the live project history.
 
+## 1.7.0
+
+- Add automatic cleanup after 24 hours, 7 days, 30 days, or 90 days while always preserving favorites.
+- Add independent automatic-capture controls for text, links, and recognizable code.
+- Add temporary privacy pauses, an indefinite pause, and a one-hour quick pause in the popup.
+- Let users omit website addresses, page titles, and the Chrome source label from future automatic captures.
+- Add an on-device storage overview with category totals, favorite count, approximate usage, oldest clip, and cleanup actions.
+- Run local retention maintenance hourly and whenever Clipboard+ reads its stored state.
+
 ## 1.6.3
 
 - Add an interactive top-mounted spotlight that follows pointer movement across the Capture Controls page.

@@ -1,11 +1,30 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { CheckIcon, PlusIcon, TrashIcon, XIcon } from '../components/Icons';
-import { CAPTURE_CONSENT_VERSION, normalizeHostname } from '../lib/clips';
+import { CAPTURE_CONSENT_VERSION, captureIsPaused, normalizeHostname } from '../lib/clips';
 import { COMPANION_ENABLED } from '../lib/build';
 import { removeWebsiteAccess, requestWebsiteAccess } from '../lib/capturePermissions';
 import { sendMessage } from '../lib/runtime';
-import type { Settings, StorageState } from '../lib/types';
+import type { ClipType, RetentionDays, Settings, StorageState } from '../lib/types';
+import { TypeGlyph } from '../popup/TypeGlyph';
 import './options.css';
+
+const CAPTURE_TYPE_OPTIONS: Array<{ type: ClipType; label: string; detail: string }> = [
+  { type: 'text', label: 'Text', detail: 'Notes, messages, and ordinary selections' },
+  { type: 'url', label: 'Links', detail: 'Complete web addresses' },
+  { type: 'code', label: 'Code', detail: 'Recognizable code and structured data' },
+];
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function pauseDescription(settings: Settings): string {
+  if (!captureIsPaused(settings)) return 'Automatic website capture is currently available.';
+  if (settings.capturePausedUntil === null) return 'Paused until you resume it.';
+  return `Paused until ${new Intl.DateTimeFormat(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' }).format(settings.capturePausedUntil)}.`;
+}
 
 export function Options() {
   const [state, setState] = useState<StorageState | null>(null);
@@ -14,6 +33,7 @@ export function Options() {
   const [error, setError] = useState('');
   const [companionOnline, setCompanionOnline] = useState(false);
   const [websiteAccess, setWebsiteAccess] = useState(false);
+  const [pausePreset, setPausePreset] = useState('15');
 
   useEffect(() => {
     void sendMessage({ type: COMPANION_ENABLED ? 'SYNC_COMPANION' : 'GET_STATE' }).then((response) => {
@@ -114,6 +134,39 @@ export function Options() {
     if (response.state) setState(response.state);
   };
 
+  const setRetention = async (retentionDays: RetentionDays) => {
+    if (!state) return;
+    const cutoff = retentionDays ? Date.now() - retentionDays * 24 * 60 * 60 * 1000 : 0;
+    const expiring = retentionDays
+      ? state.clips.filter((clip) => !clip.favorite && clip.updatedAt < cutoff).length
+      : 0;
+    if (expiring && !window.confirm(`${expiring} expired clip${expiring === 1 ? '' : 's'} will be deleted now. Favorites will stay saved.`)) return;
+    await update({ retentionDays });
+  };
+
+  const toggleCaptureType = async (type: ClipType) => {
+    if (!state) return;
+    const enabled = state.settings.captureTypes.includes(type);
+    const captureTypes = enabled
+      ? state.settings.captureTypes.filter((item) => item !== type)
+      : [...state.settings.captureTypes, type];
+    if (!captureTypes.length) return;
+    await update({ captureTypes });
+  };
+
+  const pauseCapture = async () => {
+    const now = Date.now();
+    let capturePausedUntil: number | null;
+    if (pausePreset === 'indefinite') capturePausedUntil = null;
+    else if (pausePreset === 'tomorrow') {
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(8, 0, 0, 0);
+      capturePausedUntil = tomorrow.getTime();
+    } else capturePausedUntil = now + Number(pausePreset) * 60 * 1000;
+    await update({ capturePaused: true, capturePausedUntil });
+  };
+
   if (!state) return <main className="options-shell"><div className="options-loading">{error || 'Loading Clipboard+…'}</div></main>;
 
   return (
@@ -173,7 +226,7 @@ export function Options() {
       <section className="settings-card">
         <div className="setting-row">
           <div><h2>Automatic web capture</h2><p>{websiteAccess && state.settings.autoCapture ? 'Enabled for authorized websites.' : 'Off. Manual clips and Save tab remain available.'}</p></div>
-          <label className="switch"><input type="checkbox" checked={websiteAccess && state.settings.autoCapture} onChange={(event) => void (event.target.checked ? enableCapture() : disableCapture())} /><span /></label>
+          <label className="switch"><input type="checkbox" aria-label="Automatic web capture" checked={websiteAccess && state.settings.autoCapture} onChange={(event) => void (event.target.checked ? enableCapture() : disableCapture())} /><span /></label>
         </div>
         <div className="divider" />
         <div className="setting-row">
@@ -181,6 +234,44 @@ export function Options() {
           <select value={state.settings.historyLimit} onChange={(event) => void update({ historyLimit: Number(event.target.value) })} aria-label="History limit">
             <option value={100}>100 clips</option><option value={250}>250 clips</option><option value={500}>500 clips</option><option value={1000}>1,000 clips</option>
           </select>
+        </div>
+        <div className="divider" />
+        <div className="setting-row">
+          <div><h2>Automatic cleanup</h2><p>Remove older non-favorite clips based on when they were last copied or captured.</p></div>
+          <select value={state.settings.retentionDays} onChange={(event) => void setRetention(Number(event.target.value) as RetentionDays)} aria-label="Automatic cleanup">
+            <option value={0}>Keep indefinitely</option><option value={1}>After 24 hours</option><option value={7}>After 7 days</option><option value={30}>After 30 days</option><option value={90}>After 90 days</option>
+          </select>
+        </div>
+      </section>
+
+      <section className={`settings-card pause-card ${captureIsPaused(state.settings) ? 'is-paused' : ''}`}>
+        <div className="card-heading"><div><span className="card-kicker">Quick privacy</span><h2>Pause automatic web capture</h2><p>{pauseDescription(state.settings)}</p></div></div>
+        {captureIsPaused(state.settings) ? (
+          <button className="resume-button" type="button" onClick={() => void update({ capturePaused: false, capturePausedUntil: null })}>Resume capture now</button>
+        ) : (
+          <div className="pause-controls">
+            <select value={pausePreset} onChange={(event) => setPausePreset(event.target.value)} aria-label="Pause duration">
+              <option value="15">15 minutes</option><option value="60">1 hour</option><option value="tomorrow">Until tomorrow morning</option><option value="indefinite">Until I resume</option>
+            </select>
+            <button type="button" onClick={() => void pauseCapture()}>Pause capture</button>
+          </div>
+        )}
+      </section>
+
+      <section className="settings-card capture-details-card">
+        <div className="card-heading"><div><h2>What to capture</h2><p>Choose which categories automatic website capture can save. Manual clips and Save tab always remain available.</p></div></div>
+        <div className="capture-type-grid">
+          {CAPTURE_TYPE_OPTIONS.map(({ type, label, detail }) => {
+            const checked = state.settings.captureTypes.includes(type);
+            return <label className={`capture-type-option ${checked ? 'selected' : ''}`} key={type}><input type="checkbox" checked={checked} disabled={checked && state.settings.captureTypes.length === 1} onChange={() => void toggleCaptureType(type)} /><TypeGlyph type={type} /><span><strong>{label}</strong><small>{detail}</small></span></label>;
+          })}
+        </div>
+        <div className="divider" />
+        <div className="card-heading source-heading"><div><h2>Source information</h2><p>These choices affect future automatic captures. Existing clips remain unchanged.</p></div></div>
+        <div className="source-options">
+          <label><span><strong>Website source</strong><small>Store the page address so Clipboard+ can show its domain.</small></span><input type="checkbox" checked={state.settings.captureSourceUrl} onChange={(event) => void update({ captureSourceUrl: event.target.checked })} /></label>
+          <label><span><strong>Page title</strong><small>Keep the page title for searching and context.</small></span><input type="checkbox" checked={state.settings.capturePageTitle} onChange={(event) => void update({ capturePageTitle: event.target.checked })} /></label>
+          <label><span><strong>Source application</strong><small>Identify Chrome as the application that captured the clip.</small></span><input type="checkbox" checked={state.settings.captureSourceApp} onChange={(event) => void update({ captureSourceApp: event.target.checked })} /></label>
         </div>
       </section>
 
@@ -199,8 +290,17 @@ export function Options() {
         <p><a href="https://tonys-coding.github.io/ClipboardPlus/privacy.html" target="_blank" rel="noreferrer">Privacy policy</a> · <a href="https://tonys-coding.github.io/ClipboardPlus/support.html" target="_blank" rel="noreferrer">Support</a> · <a href="https://tonys-coding.github.io/ClipboardPlus/data-deletion.html" target="_blank" rel="noreferrer">Delete your data</a></p>
       </section>
 
-      <section className="settings-card danger-card">
-        <div><h2>Stored data</h2><p>{state.clips.length} clip{state.clips.length === 1 ? '' : 's'} saved on this device.</p></div>
+      <section className="settings-card storage-card">
+        <div className="card-heading"><div><span className="card-kicker">On this device</span><h2>Storage overview</h2><p>Clipboard+ keeps this data only in Chrome's local extension storage.</p></div></div>
+        <div className="storage-grid">
+          <div><strong>{state.clips.length}</strong><span>Total clips</span></div>
+          <div><strong>{state.clips.filter((clip) => clip.favorite).length}</strong><span>Favorites</span></div>
+          <div><strong>{state.clips.filter((clip) => clip.type === 'text').length}</strong><span>Text</span></div>
+          <div><strong>{state.clips.filter((clip) => clip.type === 'url').length}</strong><span>Links</span></div>
+          <div><strong>{state.clips.filter((clip) => clip.type === 'code').length}</strong><span>Code</span></div>
+          <div><strong>{formatBytes(new TextEncoder().encode(JSON.stringify(state)).length)}</strong><span>Approx. usage</span></div>
+        </div>
+        <p className="oldest-clip">{state.clips.length ? `Oldest saved clip: ${new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).format(Math.min(...state.clips.map((clip) => clip.createdAt)))}` : 'No clips are currently stored.'}</p>
         <div className="danger-actions"><button type="button" onClick={() => void clear(false)}><TrashIcon /> Clear history</button><button className="danger" type="button" onClick={() => void clear(true)}><TrashIcon /> Clear all data</button></div>
       </section>
     </main>

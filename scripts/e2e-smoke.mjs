@@ -12,6 +12,9 @@ const server = createServer((_request, response) => {
     <p id="keyboard-copy">Copied with Command C</p>
     <p id="menu-copy">Copied through the copy event</p>
     <pre id="code-copy">const captured = clips.map((clip) =&gt; clip.content);</pre>
+    <p id="filtered-url">https://filtered.example/path</p>
+    <p id="source-free">Captured without source details</p>
+    <p id="paused-copy">This copy happened during a privacy pause</p>
     <input id="password" type="password" value="Never store this password">
   </body></html>`);
 });
@@ -105,6 +108,37 @@ try {
   if (!popupTypography.family.includes('Satoshi') || !popupTypography.loaded) throw new Error('The bundled Satoshi font was not applied.');
   if (pageErrors.length) throw new Error(`Page errors: ${pageErrors.join('; ')}`);
 
+  await extensionPage.evaluate(() => chrome.runtime.sendMessage({
+    type: 'UPDATE_SETTINGS',
+    payload: { captureTypes: ['text'], capturePageTitle: false, captureSourceUrl: false, captureSourceApp: false },
+  }));
+  await page.waitForTimeout(100);
+  await page.locator('#filtered-url').selectText();
+  await page.keyboard.press(process.platform === 'darwin' ? 'Meta+C' : 'Control+C');
+  await page.locator('#source-free').selectText();
+  await page.keyboard.press(process.platform === 'darwin' ? 'Meta+C' : 'Control+C');
+
+  await extensionPage.evaluate(() => chrome.runtime.sendMessage({
+    type: 'UPDATE_SETTINGS',
+    payload: { capturePaused: true, capturePausedUntil: Date.now() + 60_000 },
+  }));
+  await page.waitForTimeout(100);
+  await page.locator('#paused-copy').selectText();
+  await page.keyboard.press(process.platform === 'darwin' ? 'Meta+C' : 'Control+C');
+  await extensionPage.evaluate(() => chrome.runtime.sendMessage({
+    type: 'UPDATE_SETTINGS',
+    payload: { capturePaused: false, capturePausedUntil: null },
+  }));
+  await page.waitForTimeout(150);
+
+  const privacyControlResult = await extensionPage.evaluate(async () => (await chrome.storage.local.get('clipboardPlus')).clipboardPlus);
+  const filteredUrl = privacyControlResult.clips.find((clip) => clip.content === 'https://filtered.example/path');
+  const sourceFree = privacyControlResult.clips.find((clip) => clip.content === 'Captured without source details');
+  const pausedCopy = privacyControlResult.clips.find((clip) => clip.content === 'This copy happened during a privacy pause');
+  if (filteredUrl) throw new Error('A disabled URL capture category was persisted.');
+  if (!sourceFree || sourceFree.title || sourceFree.sourceUrl || sourceFree.sourceApp) throw new Error('Source metadata preferences were not honored.');
+  if (pausedCopy) throw new Error('A copy made during a privacy pause was persisted.');
+
   await page.bringToFront();
   await extensionPage.reload();
   await extensionPage.getByRole('textbox', { name: 'Search clips' }).waitFor({ timeout: 10_000 });
@@ -132,7 +166,7 @@ try {
   const nativeResult = await extensionPage.evaluate(() => chrome.runtime.sendMessage({ type: 'SYNC_COMPANION' }));
   const nativeMessaging = nativeResult.companion?.available ? 'connected' : 'Chrome for Testing does not read user-level native hosts';
 
-  console.log(JSON.stringify({ extensionId, captured: contents, codeClassified: true, passwordExcluded: true, popupDiagnostic: 'ready', smartSnippets: true, pasteTransformations: true, typography: popupTypography.family, nativeMessaging }, null, 2));
+  console.log(JSON.stringify({ extensionId, captured: contents, codeClassified: true, passwordExcluded: true, captureTypes: true, privacyPause: true, sourceMetadataControls: true, popupDiagnostic: 'ready', smartSnippets: true, pasteTransformations: true, typography: popupTypography.family, nativeMessaging }, null, 2));
 } finally {
   await context?.close();
   await new Promise((resolveClosed) => server.close(resolveClosed));

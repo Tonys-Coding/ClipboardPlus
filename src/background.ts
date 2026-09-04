@@ -1,11 +1,12 @@
-import { addClip, CAPTURE_CONSENT_VERSION, detectClipType, normalizeContent, normalizeHostname, pruneClips } from './lib/clips';
+import { addClip, CAPTURE_CONSENT_VERSION, detectClipType, maintainState, normalizeContent, normalizeHostname, prepareCapturedClip, pruneClips } from './lib/clips';
 import { COMPANION_ENABLED } from './lib/build';
 import { CAPTURE_ORIGINS, captureIsAuthorized, hasWebsiteAccess } from './lib/capturePermissions';
 import { ensureState, readState, writeState } from './lib/storage';
-import type { Clip, RuntimeMessage, RuntimeResponse, Settings, StorageState } from './lib/types';
+import type { Clip, ClipType, RetentionDays, RuntimeMessage, RuntimeResponse, Settings, StorageState } from './lib/types';
 
 const NATIVE_HOST = 'com.clipboardplus.native';
 const CAPTURE_SCRIPT_ID = 'clipboard-plus-web-capture';
+const MAINTENANCE_ALARM = 'clipboard-plus-maintenance';
 
 interface NativeHostResponse {
   ok: boolean;
@@ -117,6 +118,7 @@ async function syncCaptureRegistration(providedState?: StorageState): Promise<bo
 
 async function initializeExtension(openOnboarding: boolean): Promise<void> {
   const state = await ensureState();
+  chrome.alarms.create(MAINTENANCE_ALARM, { periodInMinutes: 60 });
   await syncCaptureRegistration(state);
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
@@ -141,6 +143,10 @@ chrome.runtime.onInstalled.addListener((details) => {
 
 chrome.runtime.onStartup.addListener(() => {
   void initializeExtension(false);
+});
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === MAINTENANCE_ALARM) void readState();
 });
 
 chrome.permissions.onRemoved.addListener((permissions) => {
@@ -196,10 +202,37 @@ function sanitizeSettings(current: Settings, changes: Partial<Settings>): Settin
   const excludedSites = changes.excludedSites
     ? [...new Set(changes.excludedSites.map(normalizeHostname).filter((site): site is string => Boolean(site)))]
     : current.excludedSites;
+  const retentionDays = [0, 1, 7, 30, 90].includes(Number(changes.retentionDays))
+    ? Number(changes.retentionDays) as RetentionDays
+    : current.retentionDays;
+  const captureTypes = changes.captureTypes
+    ? [...new Set(changes.captureTypes.filter((type): type is ClipType => ['text', 'url', 'code'].includes(type)))]
+    : current.captureTypes;
+  const capturePaused = typeof changes.capturePaused === 'boolean'
+    ? changes.capturePaused
+    : current.capturePaused;
+  const capturePausedUntil = !capturePaused
+    ? null
+    : changes.capturePausedUntil === null || typeof changes.capturePausedUntil === 'number'
+      ? changes.capturePausedUntil
+      : current.capturePausedUntil;
   return {
     autoCapture: typeof changes.autoCapture === 'boolean' ? changes.autoCapture : current.autoCapture,
     historyLimit,
+    retentionDays,
     excludedSites,
+    captureTypes: captureTypes.length ? captureTypes : current.captureTypes,
+    capturePaused,
+    capturePausedUntil,
+    capturePageTitle: typeof changes.capturePageTitle === 'boolean'
+      ? changes.capturePageTitle
+      : current.capturePageTitle,
+    captureSourceUrl: typeof changes.captureSourceUrl === 'boolean'
+      ? changes.captureSourceUrl
+      : current.captureSourceUrl,
+    captureSourceApp: typeof changes.captureSourceApp === 'boolean'
+      ? changes.captureSourceApp
+      : current.captureSourceApp,
     captureConsentVersion: typeof changes.captureConsentVersion === 'number'
       ? Math.max(0, Math.floor(changes.captureConsentVersion))
       : current.captureConsentVersion,
@@ -226,6 +259,14 @@ async function handleMessage(message: RuntimeMessage): Promise<RuntimeResponse> 
       case 'ADD_CLIP':
         state = addClip(state, message.payload);
         break;
+      case 'CAPTURE_CLIP': {
+        const captured = prepareCapturedClip(state.settings, {
+          ...message.payload,
+          sourceApp: message.payload.sourceApp || 'Google Chrome',
+        });
+        if (captured) state = addClip(state, captured);
+        break;
+      }
       case 'UPDATE_CLIP':
         state = updateClip(state, message.payload.id, message.payload);
         break;
@@ -245,6 +286,7 @@ async function handleMessage(message: RuntimeMessage): Promise<RuntimeResponse> 
         break;
       case 'UPDATE_SETTINGS':
         state = { ...state, settings: sanitizeSettings(state.settings, message.payload) };
+        state = maintainState(state);
         state.clips = pruneClips(state.clips, state.settings.historyLimit);
         captureSettingsChanged = true;
         break;
