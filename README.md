@@ -30,7 +30,7 @@ Final releases update the extension, package, native bundle, README, and changel
 
 ## macOS companion
 
-The companion is currently a developer preview and is not included or advertised as available in the v1.7.0 Chrome Web Store package. It remains part of the permanent free feature set and will return to the public interface after Apple signing, notarization, and consumer installation are complete.
+The companion is currently a developer preview and is not included or advertised as available in the v1.7.1 Chrome Web Store package. It remains part of the permanent free feature set and will return to the public interface after Apple signing, notarization, and consumer installation are complete.
 
 Install and start universal capture with:
 
@@ -81,7 +81,7 @@ The public [privacy policy](https://tonys-coding.github.io/ClipboardPlus/privacy
 
 Opening the popup first checks optional website access, then checks the page listener and reinjects it when Chrome has left an authorized eligible tab without one. Clipboard+ displays an inline warning when capture is disabled, permission is absent, the site is excluded, the page is restricted, or the listener is unavailable.
 
-If capture is unavailable, open Clipboard+ Settings, enable automatic website capture, approve the optional access request, and refresh pages that were already open. Browser-owned surfaces—including the address bar, New Tab, Chrome settings, and the Chrome Web Store—cannot expose copy events to extensions. Native **Copy link address** may also bypass the page copy event; use Clipboard+'s own context-menu link action in that case.
+If capture is unavailable, open Clipboard+ Settings, enable automatic website capture, and approve the optional access request. Clipboard+ activates eligible open website tabs immediately. Browser-owned surfaces—including the address bar, New Tab, Chrome settings, and the Chrome Web Store—cannot expose copy events to extensions. Native **Copy link address** may also bypass the page copy event; use Clipboard+'s own context-menu link action in that case.
 
 ## Store publication
 
@@ -91,4 +91,4 @@ Developer-account registration, two-step verification, trader classification, an
 
 ## Monetization boundary
 
-Everything included through v1.7.0 remains free. Bug fixes, security updates, privacy controls, accessibility, data ownership, and browser compatibility are not paid upgrades. A future Pro launch is gated on public demand and is planned around end-to-end encrypted cross-device sync, folders or sessions, encrypted backup and restore, and device management. The target launch price is $3.99 monthly or $29.99 yearly with a 14-day no-card trial; no billing or account code exists in v1.7.0.
+Everything included through v1.7.1 remains free. Bug fixes, security updates, privacy controls, accessibility, data ownership, and browser compatibility are not paid upgrades. A future Pro launch is gated on public demand and is planned around end-to-end encrypted cross-device sync, folders or sessions, encrypted backup and restore, and device management. The target launch price is $3.99 monthly or $29.99 yearly with a 14-day no-card trial; no billing or account code exists in v1.7.1.

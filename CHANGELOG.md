@@ -2,6 +2,12 @@
 
 Clipboard+'s Git history was reconstructed from local development milestones after versions 1.0.0 through 1.4.2 had already been built. Those tags preserve the rollout order; their publication timestamps are intentionally not backdated. Releases from 1.5.0 onward follow the live project history.
 
+## 1.7.1
+
+- Activate automatic capture immediately in eligible website tabs that were already open when access was enabled or Clipboard+ was updated.
+- Continue past restricted or unavailable tabs without interrupting capture elsewhere.
+- Add browser regression coverage for enabling capture without refreshing the current webpage.
+
 ## 1.7.0
 
 - Add automatic cleanup after 24 hours, 7 days, 30 days, or 90 days while always preserving favorites.

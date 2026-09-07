@@ -94,7 +94,18 @@ async function syncCompanion(): Promise<RuntimeResponse> {
   }
 }
 
-async function syncCaptureRegistration(providedState?: StorageState): Promise<boolean> {
+async function injectCaptureIntoOpenTabs(): Promise<void> {
+  const tabs = await chrome.tabs.query({});
+  await Promise.allSettled(tabs.map(async (tab) => {
+    if (!tab.id || !/^https?:\/\//i.test(tab.url ?? '')) return;
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id, allFrames: true },
+      files: ['content.js'],
+    });
+  }));
+}
+
+async function syncCaptureRegistration(providedState?: StorageState, activateOpenTabs = false): Promise<boolean> {
   const state = providedState ?? await readState();
   const websiteAccess = await hasWebsiteAccess();
   const shouldRegister = captureIsAuthorized(state.settings, websiteAccess);
@@ -110,16 +121,18 @@ async function syncCaptureRegistration(providedState?: StorageState): Promise<bo
       allFrames: true,
       persistAcrossSessions: true,
     }]);
+    activateOpenTabs = true;
   } else if (!shouldRegister && isRegistered) {
     await chrome.scripting.unregisterContentScripts({ ids: [CAPTURE_SCRIPT_ID] });
   }
+  if (shouldRegister && activateOpenTabs) await injectCaptureIntoOpenTabs();
   return websiteAccess;
 }
 
 async function initializeExtension(openOnboarding: boolean): Promise<void> {
   const state = await ensureState();
   chrome.alarms.create(MAINTENANCE_ALARM, { periodInMinutes: 60 });
-  await syncCaptureRegistration(state);
+  await syncCaptureRegistration(state, true);
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
       id: 'clipboard-plus-selection',
@@ -161,7 +174,7 @@ chrome.permissions.onRemoved.addListener((permissions) => {
 
 chrome.permissions.onAdded.addListener((permissions) => {
   if (!permissions.origins?.some((origin) => CAPTURE_ORIGINS.includes(origin))) return;
-  void syncCaptureRegistration();
+  void syncCaptureRegistration(undefined, true);
 });
 
 function updateClip(
@@ -253,6 +266,7 @@ async function handleMessage(message: RuntimeMessage): Promise<RuntimeResponse> 
     }
     let state = await readState();
     let captureSettingsChanged = false;
+    let captureAuthorizationChanged = false;
     switch (message.type) {
       case 'GET_STATE':
         return { ok: true, state, permissions: { websiteAccess: await hasWebsiteAccess() } };
@@ -289,6 +303,9 @@ async function handleMessage(message: RuntimeMessage): Promise<RuntimeResponse> 
         state = maintainState(state);
         state.clips = pruneClips(state.clips, state.settings.historyLimit);
         captureSettingsChanged = true;
+        captureAuthorizationChanged = 'autoCapture' in message.payload
+          || 'captureConsentVersion' in message.payload
+          || 'captureConsentAt' in message.payload;
         break;
       case 'CLEAR_HISTORY':
         state = { ...state, clips: state.clips.filter((clip) => clip.favorite) };
@@ -301,7 +318,7 @@ async function handleMessage(message: RuntimeMessage): Promise<RuntimeResponse> 
     }
     await writeState(state);
     const websiteAccess = captureSettingsChanged
-      ? await syncCaptureRegistration(state)
+      ? await syncCaptureRegistration(state, captureAuthorizationChanged)
       : await hasWebsiteAccess();
     if (COMPANION_ENABLED && companionConnected) {
       try {

@@ -14,14 +14,14 @@ Automatic website capture is optional. It starts only after you review the discl
 
 Clipboard+ v1.7 adds optional automatic cleanup and a local storage overview. It has no account system, analytics, advertising, or cloud synchronization. History and settings stay in Chrome's local extension storage on your device.
 
-Everything included through v1.7.0 is a permanent free core. Future paid services, if introduced, will apply only to new functionality such as encrypted cross-device synchronization.
+Everything included through v1.7.1 is a permanent free core. Future paid services, if introduced, will apply only to new functionality such as encrypted cross-device synchronization.
 
 ## Category and language
 
 - Category: Productivity
 - Primary language: English
 - Mature content: No
-- Contains paid functionality: No for v1.7.0
+- Contains paid functionality: No for v1.7.1
 - Initial visibility: Unlisted
 
 ## URLs

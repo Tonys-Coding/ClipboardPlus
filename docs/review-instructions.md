@@ -10,4 +10,4 @@
 8. Review the local category counts and storage estimate, then use Clear history and Clear all data to verify local deletion.
 9. Turn Automatic web capture off. Confirm Chrome removes the optional website permission and subsequent webpage copies are not saved.
 
-The v1.7.0 store package has no account, backend, analytics, advertisements, native messaging, remote executable code, or off-device clipboard processing.
+The v1.7.1 store package has no account, backend, analytics, advertisements, native messaging, remote executable code, or off-device clipboard processing.

@@ -38,6 +38,11 @@ try {
   if (!worker) worker = await context.waitForEvent('serviceworker', { timeout: 10_000 });
   const extensionId = new URL(worker.url()).host;
 
+  const page = await context.newPage();
+  const pageErrors = [];
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+  await page.goto(`http://127.0.0.1:${address.port}`);
+
   const onboardingPage = await context.newPage();
   await onboardingPage.goto(`chrome-extension://${extensionId}/options.html`);
   const enableCapture = onboardingPage.getByRole('button', { name: 'Enable website capture' });
@@ -48,10 +53,7 @@ try {
     const registrations = await chrome.scripting.getRegisteredContentScripts({ ids: ['clipboard-plus-web-capture'] });
     return stored.clipboardPlus?.settings?.autoCapture === true && allowed && registrations.length === 1;
   }, null, { timeout: 10_000 });
-  const page = await context.newPage();
-  const pageErrors = [];
-  page.on('pageerror', (error) => pageErrors.push(error.message));
-  await page.goto(`http://127.0.0.1:${address.port}`);
+  await page.bringToFront();
   await page.waitForTimeout(250);
   const captureHealth = await worker.evaluate(async () => {
     const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
