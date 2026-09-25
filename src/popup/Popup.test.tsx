@@ -38,17 +38,28 @@ beforeEach(() => {
 });
 
 describe('Clipboard+ popup', () => {
-  it('shows favorites separately, searches, and copies a clip on row click', async () => {
+  it('keeps favorites exclusively in Saved while filtering and copying history', async () => {
     const user = userEvent.setup();
     const clipboardWrite = vi.spyOn(navigator.clipboard, 'writeText');
     render(<Popup />);
-    expect(await screen.findByText('Favorites')).toBeInTheDocument();
-    expect(screen.getByText('Recent')).toBeInTheDocument();
+    expect(await screen.findByText('Recent')).toBeInTheDocument();
+    expect(screen.queryByText('Favorites')).not.toBeInTheDocument();
+    expect(screen.queryByText('https://example.com')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'All' })).toHaveTextContent('3');
+    expect(screen.getByRole('button', { name: 'Favorites' })).toHaveTextContent('1');
     expect(await screen.findByRole('textbox', { name: 'Search clips' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Favorites' }));
+    expect(screen.getByText('Favorites')).toBeInTheDocument();
+    expect(screen.queryByText('Recent')).not.toBeInTheDocument();
+    expect(screen.getByText('https://example.com')).toBeInTheDocument();
+    expect(screen.queryByText('Recent note')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /copy url clip: https:\/\/example\.com/i }));
     expect(clipboardWrite).toHaveBeenCalledWith('https://example.com');
     expect(await screen.findByText('Copied')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'All' }));
 
     const recentCard = screen.getByText('Recent note').closest('article')!;
     expect(within(recentCard).getByText('Recent note')).toHaveClass('clip-content');
@@ -58,8 +69,8 @@ describe('Clipboard+ popup', () => {
     expect(screen.queryByText('A misleading page title')).not.toBeInTheDocument();
 
     await user.type(screen.getByRole('textbox', { name: 'Search clips' }), 'Example home');
-    expect(screen.getByText('https://example.com')).toBeInTheDocument();
-    expect(screen.queryByText('Example home')).not.toBeInTheDocument();
+    expect(screen.queryByText('https://example.com')).not.toBeInTheDocument();
+    expect(screen.getByText('No matching clips')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Clear search' }));
 
     await user.type(screen.getByRole('textbox', { name: 'Search clips' }), 'note');
@@ -68,9 +79,8 @@ describe('Clipboard+ popup', () => {
 
     await user.click(screen.getByRole('button', { name: 'Clear search' }));
     await user.click(screen.getByRole('button', { name: 'Links' }));
-    expect(screen.getByText('https://example.com')).toBeInTheDocument();
-    expect(screen.getByText('chatgpt.com')).toBeInTheDocument();
-    expect(screen.getByText('URL')).toBeInTheDocument();
+    expect(screen.queryByText('https://example.com')).not.toBeInTheDocument();
+    expect(screen.getByText('No matching clips')).toBeInTheDocument();
     expect(screen.queryByText('Recent note')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Text' }));
@@ -90,10 +100,6 @@ describe('Clipboard+ popup', () => {
     expect(search).toHaveFocus();
 
     await user.keyboard('{ArrowDown}');
-    const favoriteRow = screen.getByRole('button', { name: /copy url clip: https:\/\/example\.com/i });
-    expect(favoriteRow).toHaveFocus();
-
-    await user.keyboard('{ArrowDown}');
     const recentRow = screen.getByRole('button', { name: /copy text clip: recent note/i });
     expect(recentRow).toHaveFocus();
 
@@ -101,12 +107,12 @@ describe('Clipboard+ popup', () => {
     expect(screen.getByRole('button', { name: /copy text clip: hello \{\{name\}\}/i })).toHaveFocus();
 
     await user.keyboard('{Home}');
-    expect(favoriteRow).toHaveFocus();
+    expect(recentRow).toHaveFocus();
 
     await user.keyboard('{ArrowUp}');
     expect(search).toHaveFocus();
 
-    await user.keyboard('{ArrowDown}{ArrowDown}{Enter}');
+    await user.keyboard('{ArrowDown}{Enter}');
     expect(clipboardWrite).toHaveBeenCalledWith('Recent note');
   });
 

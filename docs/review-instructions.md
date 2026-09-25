@@ -13,5 +13,6 @@
 11. From a clip's three-dot menu, open Preview to read the complete clip with preserved whitespace, then use Copy. For a smart snippet, use Copy original to copy the stored `{{field}}` text instead of the filled result, and confirm the saved clip is unchanged.
 12. Delete a single clip and confirm the eight-second Undo notice restores it in its original position. Clear history and clear all data remain irreversible. Clipboard+ also shows one accurate capture state — off, missing permission, excluded, restricted, paused, or unreachable listener — with the matching action.
 13. Open Settings → About & help. Confirm the manifest version, current shortcut, and shortcut settings link appear, and that Copy troubleshooting details copies a short checklist with no clipboard contents, page addresses, excluded domains, or identifiers.
+14. Favorite a clip. Confirm it disappears from All and its category section, appears in Saved, and returns to the appropriate history/category section after it is unfavorited.
 
-The v1.8.0 store package has no account, backend, analytics, advertisements, native messaging, remote executable code, or off-device clipboard processing.
+The v1.8.1 store package has no account, backend, analytics, advertisements, native messaging, remote executable code, or off-device clipboard processing.

@@ -2,6 +2,11 @@
 
 Clipboard+'s Git history was reconstructed from local development milestones after versions 1.0.0 through 1.4.2 had already been built. Those tags preserve the rollout order; their publication timestamps are intentionally not backdated. Releases from 1.5.0 onward follow the live project history.
 
+## 1.8.1
+
+- Keep favorite clips exclusively in the Saved section instead of repeating them in All or the text, link, and code sections.
+- Make the All and category counters reflect only non-favorite history, while Saved continues to show the complete favorite count.
+
 ## 1.8.0
 
 - Add keyboard access: the suggested, user-customizable Alt+Shift+C shortcut opens Clipboard+ and focuses search, and the arrow, Home, and End keys move through the visible favorites and recent clips without disturbing typing.

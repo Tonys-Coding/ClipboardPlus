@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 const run = promisify(execFile);
 const root = resolve(import.meta.dirname, '..');
 const outputDirectory = resolve(root, 'artifacts');
-const archive = resolve(outputDirectory, 'clipboard-plus-v1.8.0-store.zip');
+const archive = resolve(outputDirectory, 'clipboard-plus-v1.8.1-store.zip');
 
 await mkdir(outputDirectory, { recursive: true });
 await rm(archive, { force: true });

@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Clipboard+",
   "description": "A private, searchable clipboard history for text, links, code, and reusable snippets.",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "permissions": ["storage", "activeTab", "clipboardWrite", "scripting", "contextMenus", "alarms"],
   "optional_host_permissions": ["http://*/*", "https://*/*"],
   "incognito": "not_allowed",

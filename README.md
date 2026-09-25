@@ -33,7 +33,7 @@ Each verified extension version updates the manifest, package metadata, README, 
 
 ## macOS companion
 
-The companion is currently a developer preview and is not included or advertised as available in the v1.8.0 Chrome Web Store package. It remains part of the permanent free feature set and will return to the public interface after Apple signing, notarization, and consumer installation are complete.
+The companion is currently a developer preview and is not included or advertised as available in the v1.8.1 Chrome Web Store package. It remains part of the permanent free feature set and will return to the public interface after Apple signing, notarization, and consumer installation are complete.
 
 Install and start universal capture with:
 
@@ -72,6 +72,7 @@ The public [privacy policy](https://tonys-coding.github.io/ClipboardPlus/privacy
 ## Using the extension
 
 - Click a clip to copy it immediately.
+- Favorite clips live exclusively in **Saved**; **All**, **Text**, **Links**, and **Code** show only non-favorite history so clips are never repeated between sections.
 - Press the suggested **Alt+Shift+C** shortcut (reassignable on Chrome's shortcuts page) to open Clipboard+ with search focused, then use the arrow, Home, and End keys to move through favorites and recent clips and Enter to copy the focused row.
 - Create a smart snippet with named fields such as `Hello {{name}}`; add an optional default with `{{company|Clipboard+}}`. Clicking the snippet asks for each unique field and shows the finished result before copying.
 - Open a clip's three-dot menu and choose **Preview** to read the full clip with preserved whitespace, type, size, and source details before copying.
@@ -102,4 +103,4 @@ Developer-account registration, two-step verification, trader classification, an
 
 ## Monetization boundary
 
-Everything included through v1.8.0 remains free. Bug fixes, security updates, privacy controls, accessibility, data ownership, and browser compatibility are not paid upgrades. A future Pro launch is gated on public demand and is planned around end-to-end encrypted cross-device sync, folders or sessions, encrypted backup and restore, and device management. The target launch price is $3.99 monthly or $29.99 yearly with a 14-day no-card trial; no billing or account code exists in v1.8.0.
+Everything included through v1.8.1 remains free. Bug fixes, security updates, privacy controls, accessibility, data ownership, and browser compatibility are not paid upgrades. A future Pro launch is gated on public demand and is planned around end-to-end encrypted cross-device sync, folders or sessions, encrypted backup and restore, and device management. The target launch price is $3.99 monthly or $29.99 yearly with a 14-day no-card trial; no billing or account code exists in v1.8.1.

@@ -180,11 +180,23 @@ try {
   await extensionPage.getByRole('button', { name: 'Copy result' }).click();
   await extensionPage.getByText('Transformed copy ready').waitFor();
 
-  // ---- v1.8.0 free-polish browser coverage ----
+  // ---- v1.8 free-polish browser coverage ----
   await mkdir(screenshotDirectory, { recursive: true });
   await extensionPage.bringToFront();
   await extensionPage.reload();
   await extensionPage.getByRole('textbox', { name: 'Search clips' }).waitFor({ state: 'attached' });
+
+  await addClip(extensionPage, 'Exclusive favorite fixture');
+  const exclusiveFavorite = extensionPage.locator('article').filter({ hasText: 'Exclusive favorite fixture' });
+  await exclusiveFavorite.getByRole('button', { name: 'Clip actions' }).click();
+  await extensionPage.getByRole('menuitem', { name: 'Add to favorites' }).click();
+  await exclusiveFavorite.waitFor({ state: 'detached' });
+  await extensionPage.getByRole('button', { name: 'Favorites', exact: true }).click();
+  await extensionPage.getByText('Exclusive favorite fixture').waitFor();
+  await extensionPage.getByRole('button', { name: 'Text', exact: true }).click();
+  assert(await extensionPage.getByText('Exclusive favorite fixture').count() === 0, 'A favorite leaked into the Text section.');
+  await extensionPage.getByRole('button', { name: 'All', exact: true }).click();
+  assert(await extensionPage.getByText('Exclusive favorite fixture').count() === 0, 'A favorite leaked into the All section.');
 
   const registeredShortcut = await worker.evaluate(async () => {
     const commands = await chrome.commands.getAll();
@@ -216,6 +228,9 @@ try {
     ? 'shortcut-opened-popup-page'
     : `headless-chromium-does-not-surface-action-popups (${context.pages().length - pageCountBeforeShortcut} page delta, targets ${popupTargetsAfterShortcut.join(',')}` + ')';
   await extensionPage.bringToFront();
+  // Reopen the popup document after the filter checks so this assertion still
+  // verifies the real popup-open autofocus contract rather than retained focus.
+  await extensionPage.reload();
 
   await extensionPage.waitForFunction(() => document.activeElement?.getAttribute('aria-label') === 'Search clips');
   await extensionPage.keyboard.press('ArrowDown');
@@ -486,10 +501,10 @@ try {
   const aboutPage = await context.newPage();
   await aboutPage.goto(`chrome-extension://${extensionId}/options.html`);
   await aboutPage.getByText('About & help').waitFor({ state: 'attached' });
-  await aboutPage.getByRole('heading', { name: 'Clipboard+ 1.8.0' }).waitFor({ state: 'attached' });
+  await aboutPage.getByRole('heading', { name: 'Clipboard+ 1.8.1' }).waitFor({ state: 'attached' });
   await aboutPage.getByText(/to open Clipboard\+ and focus search/).waitFor({ state: 'attached' });
   const diagnostics = await aboutPage.locator('.diagnostics-preview').textContent();
-  if (!diagnostics.includes('Version: 1.8.0')) throw new Error('Troubleshooting details omitted the runtime version.');
+  if (!diagnostics.includes('Version: 1.8.1')) throw new Error('Troubleshooting details omitted the runtime version.');
   for (const secret of ['Copied with Command C', 'filtered.example', '127.0.0.1']) {
     if (diagnostics.includes(secret)) throw new Error(`Troubleshooting details leaked "${secret}".`);
   }
@@ -532,7 +547,8 @@ try {
     captureRecoveredOnOpenTab: true,
     externalRevocationEvidence,
     permissionRevocationProfile: 'store build (development build requires website access)',
-    aboutVersion: '1.8.0',
+    aboutVersion: '1.8.1',
+    favoritesExclusiveToSaved: true,
     troubleshootingRedacted: true,
     screenshots: ['popup-preview.png', 'options-about.png'],
     nativeMessaging,

@@ -12,16 +12,16 @@ Click any saved clip to copy it again. Search recent history, pin favorites, cla
 
 Automatic website capture is optional. It starts only after you review the disclosure and approve access to ordinary websites. You can pause it, choose text/link/code categories, omit source details, remove access, or exclude individual domains at any time. Password inputs and recognized authentication and payment fields are ignored. Chrome internal and other browser-owned pages cannot be captured.
 
-Clipboard+ v1.8 adds keyboard access, eight-second undo for single deletions, full clip preview, original copying for snippets, precise capture-state feedback, shared dialog and menu accessibility, and an About and help section with a redacted troubleshooting copy. It has no account system, analytics, advertising, or cloud synchronization. History and settings stay in Chrome's local extension storage on your device.
+Clipboard+ v1.8 adds keyboard access, eight-second undo for single deletions, full clip preview, original copying for snippets, precise capture-state feedback, shared dialog and menu accessibility, and an About and help section with a redacted troubleshooting copy. Favorites stay exclusively in Saved instead of repeating across history and category views. It has no account system, analytics, advertising, or cloud synchronization. History and settings stay in Chrome's local extension storage on your device.
 
-Everything included through v1.8.0 is a permanent free core. Future paid services, if introduced, will apply only to new functionality such as encrypted cross-device synchronization.
+Everything included through v1.8.1 is a permanent free core. Future paid services, if introduced, will apply only to new functionality such as encrypted cross-device synchronization.
 
 ## Category and language
 
 - Category: Productivity
 - Primary language: English
 - Mature content: No
-- Contains paid functionality: No for v1.8.0
+- Contains paid functionality: No for v1.8.1
 - Initial visibility: Unlisted
 
 ## URLs

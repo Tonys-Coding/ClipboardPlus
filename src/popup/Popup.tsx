@@ -338,16 +338,18 @@ export function Popup() {
   const visible = useMemo(() => {
     const matches = filterClips(state?.clips ?? [], query);
     if (filter === 'favorite') return matches.filter((clip) => clip.favorite);
-    if (filter === 'text' || filter === 'url' || filter === 'code') return matches.filter((clip) => clip.type === filter);
-    return matches;
+    const history = matches.filter((clip) => !clip.favorite);
+    if (filter === 'text' || filter === 'url' || filter === 'code') return history.filter((clip) => clip.type === filter);
+    return history;
   }, [filter, query, state?.clips]);
   const counts = useMemo(() => {
     const clips = state?.clips ?? [];
+    const history = clips.filter((clip) => !clip.favorite);
     return {
-      all: clips.length,
-      text: clips.filter((clip) => clip.type === 'text').length,
-      url: clips.filter((clip) => clip.type === 'url').length,
-      code: clips.filter((clip) => clip.type === 'code').length,
+      all: history.length,
+      text: history.filter((clip) => clip.type === 'text').length,
+      url: history.filter((clip) => clip.type === 'url').length,
+      code: history.filter((clip) => clip.type === 'code').length,
       favorite: clips.filter((clip) => clip.favorite).length,
     };
   }, [state?.clips]);
