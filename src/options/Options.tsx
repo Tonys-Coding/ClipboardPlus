@@ -1,8 +1,9 @@
-import { FormEvent, useEffect, useState } from 'react';
-import { CheckIcon, PlusIcon, TrashIcon, XIcon } from '../components/Icons';
-import { CAPTURE_CONSENT_VERSION, captureIsPaused, normalizeHostname } from '../lib/clips';
+import { FormEvent, useCallback, useEffect, useState } from 'react';
+import { CheckIcon, ClipboardIcon, PlusIcon, TrashIcon, XIcon } from '../components/Icons';
+import { CAPTURE_CONSENT_VERSION, STORAGE_KEY, captureIsPaused, normalizeHostname } from '../lib/clips';
 import { COMPANION_ENABLED } from '../lib/build';
-import { removeWebsiteAccess, requestWebsiteAccess } from '../lib/capturePermissions';
+import { buildTroubleshootingReport } from '../lib/diagnostics';
+import { hasCurrentCaptureConsent, hasWebsiteAccess, removeWebsiteAccess, requestWebsiteAccess } from '../lib/capturePermissions';
 import { sendMessage } from '../lib/runtime';
 import type { ClipType, RetentionDays, Settings, StorageState } from '../lib/types';
 import { TypeGlyph } from '../popup/TypeGlyph';
@@ -14,10 +15,62 @@ const CAPTURE_TYPE_OPTIONS: Array<{ type: ClipType; label: string; detail: strin
   { type: 'code', label: 'Code', detail: 'Recognizable code and structured data' },
 ];
 
+const CAPTURE_SCRIPT_ID = 'clipboard-plus-web-capture';
+const SHORTCUT_SETTINGS_URL = 'chrome://extensions/shortcuts';
+const RELEASE_NOTES_URL = 'https://tonys-coding.github.io/ClipboardPlus/release-notes.html';
+const SUPPORT_URL = 'https://tonys-coding.github.io/ClipboardPlus/support.html';
+
+interface AboutStatus {
+  state: StorageState | null;
+  stateError: string;
+  websiteAccess: boolean | null;
+  listenerRegistered: boolean | null;
+  shortcut: string | null;
+  shortcutKnown: boolean;
+  manifestVersion: string;
+}
+
+async function readWebsiteAccess(): Promise<boolean | null> {
+  try {
+    return await hasWebsiteAccess();
+  } catch {
+    return null;
+  }
+}
+
+async function readListenerRegistration(): Promise<boolean | null> {
+  try {
+    const registrations = await chrome.scripting?.getRegisteredContentScripts?.({ ids: [CAPTURE_SCRIPT_ID] });
+    return Boolean(registrations?.length);
+  } catch {
+    return null;
+  }
+}
+
+async function readShortcut(): Promise<{ shortcut: string | null; known: boolean }> {
+  try {
+    const commands = (await chrome.commands?.getAll?.()) ?? [];
+    return {
+      shortcut: commands.find((command) => command.name === '_execute_action')?.shortcut || null,
+      known: true,
+    };
+  } catch {
+    return { shortcut: null, known: false };
+  }
+}
+
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function shortcutStatusText(shortcut: string | null, shortcutKnown: boolean): string {
+  if (!shortcutKnown) {
+    return "Shortcut status is unavailable right now. Open Chrome's shortcut settings to check the current combination.";
+  }
+  if (shortcut) return `Press ${shortcut} to open Clipboard+ and focus search.`;
+  return 'No shortcut is currently assigned. Chrome leaves suggested shortcuts unassigned when another extension already uses the same combination.';
 }
 
 function pauseDescription(settings: Settings): string {
@@ -34,14 +87,69 @@ export function Options() {
   const [companionOnline, setCompanionOnline] = useState(false);
   const [websiteAccess, setWebsiteAccess] = useState(false);
   const [pausePreset, setPausePreset] = useState('15');
+  const [shortcut, setShortcut] = useState<string | null>(null);
+  const [shortcutKnown, setShortcutKnown] = useState(true);
+  const [listenerRegistered, setListenerRegistered] = useState<boolean | null>(null);
+  const [manifestVersion, setManifestVersion] = useState('unknown');
+  const [diagnosticsFeedback, setDiagnosticsFeedback] = useState<'idle' | 'checking' | 'copied' | 'error'>('idle');
+  const [diagnosticsMessage, setDiagnosticsMessage] = useState('');
+  const buildProfile = COMPANION_ENABLED ? 'development' : 'store';
+
+  const collectStatus = useCallback(async (): Promise<AboutStatus> => {
+    let currentState: StorageState | null = null;
+    let stateError = '';
+    try {
+      const response = await sendMessage({ type: 'GET_STATE' });
+      currentState = response.state ?? null;
+      if (!currentState) stateError = 'Clipboard+ returned no saved settings.';
+    } catch (reason) {
+      stateError = reason instanceof Error ? reason.message : 'Clipboard+ could not read its current settings.';
+    }
+
+    const { shortcut: shortcutValue, known: shortcutReadable } = await readShortcut();
+
+    let version = 'unknown';
+    try {
+      version = chrome.runtime?.getManifest?.().version ?? 'unknown';
+    } catch {
+      version = 'unknown';
+    }
+
+    return {
+      state: currentState,
+      stateError,
+      websiteAccess: await readWebsiteAccess(),
+      listenerRegistered: await readListenerRegistration(),
+      shortcut: shortcutValue,
+      shortcutKnown: shortcutReadable,
+      manifestVersion: version,
+    };
+  }, []);
+
+  const applyStatus = useCallback((status: AboutStatus) => {
+    if (status.state) setState(status.state);
+    setWebsiteAccess(status.websiteAccess === true);
+    setShortcut(status.shortcut);
+    setShortcutKnown(status.shortcutKnown);
+    setListenerRegistered(status.listenerRegistered);
+    setManifestVersion(status.manifestVersion);
+    if (status.stateError) setError(status.stateError);
+  }, []);
 
   useEffect(() => {
-    void sendMessage({ type: COMPANION_ENABLED ? 'SYNC_COMPANION' : 'GET_STATE' }).then((response) => {
-      if (response.state) setState(response.state);
-      setCompanionOnline(Boolean(response.companion?.available));
-      setWebsiteAccess(Boolean(response.permissions?.websiteAccess));
-    }).catch((reason: Error) => setError(reason.message));
-  }, []);
+    void (async () => {
+      try {
+        const response = await sendMessage({ type: COMPANION_ENABLED ? 'SYNC_COMPANION' : 'GET_STATE' });
+        if (response.state) setState(response.state);
+        setCompanionOnline(Boolean(response.companion?.available));
+        setWebsiteAccess(Boolean(response.permissions?.websiteAccess));
+      } catch (reason) {
+        setError(reason instanceof Error ? reason.message : 'Could not load Clipboard+ settings.');
+      }
+      // The About section always reflects live status instead of the first render.
+      applyStatus(await collectStatus());
+    })();
+  }, [applyStatus, collectStatus]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -61,10 +169,43 @@ export function Options() {
     };
   }, []);
 
+  useEffect(() => {
+    const refreshLive = () => {
+      void readWebsiteAccess().then((access) => {
+        if (access !== null) setWebsiteAccess(access);
+      });
+      void readListenerRegistration().then(setListenerRegistered);
+      void readShortcut().then(({ shortcut: value, known }) => {
+        setShortcut(value);
+        setShortcutKnown(known);
+      });
+    };
+    const onStorage = (changes: Record<string, chrome.storage.StorageChange>, area: string) => {
+      if (area !== 'local') return;
+      const next = changes[STORAGE_KEY]?.newValue;
+      if (next) setState(next as StorageState);
+      refreshLive();
+    };
+    const onPermissions = () => refreshLive();
+    const added = chrome.permissions.onAdded as chrome.events.Event<typeof onPermissions> | undefined;
+    const removed = chrome.permissions.onRemoved as chrome.events.Event<typeof onPermissions> | undefined;
+    chrome.storage.onChanged.addListener(onStorage);
+    added?.addListener(onPermissions);
+    removed?.addListener(onPermissions);
+    window.addEventListener('focus', refreshLive);
+    return () => {
+      chrome.storage.onChanged.removeListener(onStorage);
+      added?.removeListener(onPermissions);
+      removed?.removeListener(onPermissions);
+      window.removeEventListener('focus', refreshLive);
+    };
+  }, []);
+
   const update = async (changes: Partial<Settings>) => {
     try {
       const response = await sendMessage({ type: 'UPDATE_SETTINGS', payload: changes });
       if (response.state) setState(response.state);
+      setListenerRegistered(await readListenerRegistration());
       setSaved(true);
       setError('');
       window.setTimeout(() => setSaved(false), 1500);
@@ -90,6 +231,8 @@ export function Options() {
       });
       if (response.state) setState(response.state);
       setWebsiteAccess(true);
+      // Registration completes after the storage notification, so re-read after the reply.
+      setListenerRegistered(await readListenerRegistration());
       setSaved(true);
       setError('');
       window.setTimeout(() => setSaved(false), 1500);
@@ -104,6 +247,7 @@ export function Options() {
       if (response.state) setState(response.state);
       await removeWebsiteAccess();
       setWebsiteAccess(false);
+      setListenerRegistered(await readListenerRegistration());
       setSaved(true);
       setError('');
       window.setTimeout(() => setSaved(false), 1500);
@@ -165,6 +309,45 @@ export function Options() {
       capturePausedUntil = tomorrow.getTime();
     } else capturePausedUntil = now + Number(pausePreset) * 60 * 1000;
     await update({ capturePaused: true, capturePausedUntil });
+  };
+
+  const announceDiagnostics = (message: string) => {
+    setDiagnosticsMessage('');
+    window.setTimeout(() => setDiagnosticsMessage(message), 60);
+  };
+
+  const copyTroubleshooting = async () => {
+    setDiagnosticsFeedback('checking');
+    announceDiagnostics('Checking your current Clipboard+ status.');
+    // Every copy re-reads the live status so the report cannot describe a stale state.
+    const status = await collectStatus();
+    applyStatus(status);
+
+    if (!status.state) {
+      setDiagnosticsFeedback('error');
+      announceDiagnostics(`${status.stateError || 'Clipboard+ could not read its current status.'} Nothing was copied.`);
+      return;
+    }
+
+    const report = buildTroubleshootingReport({
+      manifestVersion: status.manifestVersion,
+      buildProfile,
+      captureEnabled: status.state.settings.autoCapture,
+      capturePaused: captureIsPaused(status.state.settings),
+      consentCurrent: hasCurrentCaptureConsent(status.state.settings),
+      websiteAccessGranted: status.websiteAccess,
+      captureListenerRegistered: status.listenerRegistered,
+    });
+
+    try {
+      await navigator.clipboard.writeText(report);
+      setDiagnosticsFeedback('copied');
+      announceDiagnostics('Troubleshooting details copied to your clipboard.');
+    } catch {
+      setDiagnosticsFeedback('error');
+      announceDiagnostics('Clipboard access was blocked, so nothing was copied. Click the button again.');
+    }
+    window.setTimeout(() => setDiagnosticsFeedback('idle'), 3_500);
   };
 
   if (!state) return <main className="options-shell"><div className="options-loading">{error || 'Loading Clipboard+…'}</div></main>;
@@ -302,6 +485,54 @@ export function Options() {
         </div>
         <p className="oldest-clip">{state.clips.length ? `Oldest saved clip: ${new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).format(Math.min(...state.clips.map((clip) => clip.createdAt)))}` : 'No clips are currently stored.'}</p>
         <div className="danger-actions"><button type="button" onClick={() => void clear(false)}><TrashIcon /> Clear history</button><button className="danger" type="button" onClick={() => void clear(true)}><TrashIcon /> Clear all data</button></div>
+      </section>
+
+      <section className="settings-card about-card" aria-labelledby="about-heading">
+        <div className="card-heading">
+          <div>
+            <span className="card-kicker">About &amp; help</span>
+            <h2 id="about-heading">Clipboard+ {manifestVersion}</h2>
+            <p>{buildProfile === 'development' ? 'Development build with the macOS Quick Paste companion.' : 'Chrome Web Store build. Free core features, local-only processing.'}</p>
+          </div>
+        </div>
+
+        <div className="about-grid">
+          <div className="about-block">
+            <h3>Keyboard shortcut</h3>
+            <p>{shortcutStatusText(shortcut, shortcutKnown)}</p>
+            <button type="button" className="about-action" onClick={() => void chrome.tabs?.create?.({ url: SHORTCUT_SETTINGS_URL })}>Manage shortcuts</button>
+            <small>This browser-only shortcut works while Chrome is in front and can be reassigned any time on Chrome's shortcut page. It does not run inside other applications.</small>
+          </div>
+
+          <div className="about-block">
+            <h3>Release notes and support</h3>
+            <p><a href={RELEASE_NOTES_URL} target="_blank" rel="noreferrer">Release notes</a> · <a href={SUPPORT_URL} target="_blank" rel="noreferrer">Help and support</a></p>
+            <small>Chrome internal pages, the Chrome Web Store, and other browser-owned pages never expose copy events to extensions. Password fields and recognized payment or authentication fields are always ignored, and automatic capture stays off until you enable it.</small>
+          </div>
+        </div>
+
+        <div className="divider" />
+
+        <div className="about-block diagnostics-block">
+          <h3>Troubleshooting details</h3>
+          <p>Copy a short local checklist for support. It lists product version, build profile, capture booleans, website-access status, and listener health.</p>
+          <pre className="diagnostics-preview">{buildTroubleshootingReport({
+            manifestVersion,
+            buildProfile,
+            captureEnabled: state.settings.autoCapture,
+            capturePaused: captureIsPaused(state.settings),
+            consentCurrent: hasCurrentCaptureConsent(state.settings),
+            websiteAccessGranted: websiteAccess,
+            captureListenerRegistered: listenerRegistered,
+          })}</pre>
+          <small>It never includes clip contents, clip counts, page titles or addresses, excluded domains, identifiers, or raw errors. These details are only copied to your clipboard and are never sent anywhere by Clipboard+.</small>
+          <div className="diagnostics-actions">
+            <button type="button" className="about-action" onClick={() => void copyTroubleshooting()} disabled={diagnosticsFeedback === 'checking'}><ClipboardIcon /> Copy troubleshooting details</button>
+            {diagnosticsFeedback === 'copied' && <span className="diagnostics-feedback"><CheckIcon /> Copied to clipboard</span>}
+            {diagnosticsFeedback === 'error' && <span className="diagnostics-feedback error">{diagnosticsMessage}</span>}
+          </div>
+          <p className="sr-only" role="status" aria-live="polite">{diagnosticsMessage}</p>
+        </div>
       </section>
     </main>
   );

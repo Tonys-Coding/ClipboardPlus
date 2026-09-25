@@ -44,14 +44,21 @@ export type RuntimeMessage =
   | { type: 'UPDATE_CLIP'; payload: { id: string; content: string; title?: string } }
   | { type: 'TOGGLE_FAVORITE'; payload: { id: string } }
   | { type: 'DELETE_CLIP'; payload: { id: string } }
+  | { type: 'RESTORE_DELETED_CLIP'; payload: { token: string } }
   | { type: 'UPDATE_SETTINGS'; payload: Partial<Settings> }
   | { type: 'CLEAR_HISTORY' }
   | { type: 'CLEAR_ALL' };
+
+export interface UndoOffer {
+  token: string;
+  expiresAt: number;
+}
 
 export interface RuntimeResponse {
   ok: boolean;
   state?: StorageState;
   error?: string;
+  undo?: UndoOffer;
   permissions?: {
     websiteAccess: boolean;
   };

@@ -1,6 +1,6 @@
 # Clipboard+
 
-Clipboard+ is a private, local-first clipboard history for Chrome and macOS. The extension classifies text, links, and recognizable code, and provides favorites, search, smart snippets, paste transformations, editing, and one-click copying. Automatic website capture is off until the user reviews the disclosure and grants optional access. The source repository also contains the developer-preview macOS companion; it is excluded from the Chrome Web Store package until a notarized consumer installer is available.
+Clipboard+ is a private, local-first clipboard history for Chrome and macOS. The extension classifies text, links, and recognizable code, and provides favorites, search, smart snippets, paste transformations, editing, preview, and one-click copying. Automatic website capture is off until the user reviews the disclosure and grants optional access. The source repository also contains the developer-preview macOS companion; it is excluded from the Chrome Web Store package until a notarized consumer installer is available.
 
 ## Development
 
@@ -20,17 +20,20 @@ npm run lint
 npm test
 npm run test:e2e
 npm run test:e2e:store
+npm run test:e2e:store:headed
 npm run test:native
 npm run package:store
 ```
 
 `npm run build` creates the local development build with Native Messaging support. `npm run build:store` creates the Chrome Web Store profile without Native Messaging or companion UI. `npm run package:store` verifies that profile and writes a manifest-root upload ZIP under `artifacts/`.
 
-Final releases update the extension, package, native bundle, README, and changelog versions together; each verified version is committed, annotated with a matching tag, pushed to `main`, and published as a GitHub Release.
+The headed store test opens an isolated, disposable Chrome profile and asks you to approve website access, copy two synthetic fixture strings, and press the popup shortcut. It verifies actual optional permission grant, revocation, and recovery without refreshing the fixture. It does not use your regular Chrome profile; the copy checks replace the system clipboard with test text.
+
+Each verified extension version updates the manifest, package metadata, README, changelog, and the public release notes together, then is committed, annotated with a matching tag, and pushed to `main`. The macOS companion version moves only when native code changes, because the companion ships separately from the Chrome Web Store package.
 
 ## macOS companion
 
-The companion is currently a developer preview and is not included or advertised as available in the v1.7.1 Chrome Web Store package. It remains part of the permanent free feature set and will return to the public interface after Apple signing, notarization, and consumer installation are complete.
+The companion is currently a developer preview and is not included or advertised as available in the v1.8.0 Chrome Web Store package. It remains part of the permanent free feature set and will return to the public interface after Apple signing, notarization, and consumer installation are complete.
 
 Install and start universal capture with:
 
@@ -69,9 +72,13 @@ The public [privacy policy](https://tonys-coding.github.io/ClipboardPlus/privacy
 ## Using the extension
 
 - Click a clip to copy it immediately.
+- Press the suggested **Alt+Shift+C** shortcut (reassignable on Chrome's shortcuts page) to open Clipboard+ with search focused, then use the arrow, Home, and End keys to move through favorites and recent clips and Enter to copy the focused row.
 - Create a smart snippet with named fields such as `Hello {{name}}`; add an optional default with `{{company|Clipboard+}}`. Clicking the snippet asks for each unique field and shows the finished result before copying.
+- Open a clip's three-dot menu and choose **Preview** to read the full clip with preserved whitespace, type, size, and source details before copying.
+- Choose **Copy original** in the clip menu or preview to copy a smart snippet's stored text exactly, without opening its fill-in fields.
 - Open a clip's three-dot menu and choose **Transform & copy** to clean whitespace, format JSON, convert letter case, or remove common tracking parameters from a link. Transformations affect only the copied result, never the saved original.
 - Use the three-dot menu to favorite, edit, or delete it.
+- Deleting a single clip shows an eight-second **Undo** notice. Clearing history or all data stays confirmed and cannot be undone.
 - Use **Add clip** for manual text and URLs, or **Save tab** to store the current page.
 - Press **Control-Shift-V** to search and paste from any macOS application.
 - On a webpage, right-click selected text or a link and use the dedicated **Save … to Clipboard+** action for a guaranteed capture path.
@@ -79,9 +86,13 @@ The public [privacy policy](https://tonys-coding.github.io/ClipboardPlus/privacy
 
 ## Capture troubleshooting
 
-Opening the popup first checks optional website access, then checks the page listener and reinjects it when Chrome has left an authorized eligible tab without one. Clipboard+ displays an inline warning when capture is disabled, permission is absent, the site is excluded, the page is restricted, or the listener is unavailable.
+Opening the popup checks page restrictions, optional website access, and the page listener, reinjecting it when Chrome has left an authorized eligible tab without one. Inline notices distinguish checking, off, missing permission, excluded sites, restricted browser pages, pauses, and unreachable listeners. Recovery controls let you open Capture Controls, retry, or resume as appropriate. A pause remains resumable even on a restricted or excluded page. The check repeats when capture settings, optional permission, or a timed pause changes; loading checks are bounded rather than spinning indefinitely.
 
 If capture is unavailable, open Clipboard+ Settings, enable automatic website capture, and approve the optional access request. Clipboard+ activates eligible open website tabs immediately. Browser-owned surfaces—including the address bar, New Tab, Chrome settings, and the Chrome Web Store—cannot expose copy events to extensions. Native **Copy link address** may also bypass the page copy event; use Clipboard+'s own context-menu link action in that case.
+
+## About and troubleshooting
+
+Settings includes an **About & help** section with the runtime manifest version, the current popup shortcut and a link to Chrome's shortcut settings, release notes, and support links. **Copy troubleshooting details** writes a short local checklist — product and version, build profile, capture enabled/paused/consent-current booleans, website-access status, and listener registration health — to the clipboard. It deliberately excludes clip contents and counts, page titles and addresses, excluded domains, identifiers, and raw errors, and Clipboard+ never sends it anywhere.
 
 ## Store publication
 
@@ -91,4 +102,4 @@ Developer-account registration, two-step verification, trader classification, an
 
 ## Monetization boundary
 
-Everything included through v1.7.1 remains free. Bug fixes, security updates, privacy controls, accessibility, data ownership, and browser compatibility are not paid upgrades. A future Pro launch is gated on public demand and is planned around end-to-end encrypted cross-device sync, folders or sessions, encrypted backup and restore, and device management. The target launch price is $3.99 monthly or $29.99 yearly with a 14-day no-card trial; no billing or account code exists in v1.7.1.
+Everything included through v1.8.0 remains free. Bug fixes, security updates, privacy controls, accessibility, data ownership, and browser compatibility are not paid upgrades. A future Pro launch is gated on public demand and is planned around end-to-end encrypted cross-device sync, folders or sessions, encrypted backup and restore, and device management. The target launch price is $3.99 monthly or $29.99 yearly with a 14-day no-card trial; no billing or account code exists in v1.8.0.

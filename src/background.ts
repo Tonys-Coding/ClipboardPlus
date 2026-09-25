@@ -2,6 +2,7 @@ import { addClip, CAPTURE_CONSENT_VERSION, detectClipType, maintainState, normal
 import { COMPANION_ENABLED } from './lib/build';
 import { CAPTURE_ORIGINS, captureIsAuthorized, hasWebsiteAccess } from './lib/capturePermissions';
 import { ensureState, readState, writeState } from './lib/storage';
+import { clearTombstone, createTombstone, readTombstone, restoreDeletedClip, tombstoneIsUsable, writeTombstone } from './lib/undo';
 import type { Clip, ClipType, RetentionDays, RuntimeMessage, RuntimeResponse, Settings, StorageState } from './lib/types';
 
 const NATIVE_HOST = 'com.clipboardplus.native';
@@ -159,7 +160,10 @@ chrome.runtime.onStartup.addListener(() => {
 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === MAINTENANCE_ALARM) void readState();
+  if (alarm.name !== MAINTENANCE_ALARM) return;
+  void readState();
+  // Drops an expired undo tombstone instead of retaining the deleted clip.
+  void readTombstone();
 });
 
 chrome.permissions.onRemoved.addListener((permissions) => {
@@ -255,7 +259,15 @@ function sanitizeSettings(current: Settings, changes: Partial<Settings>): Settin
   };
 }
 
-async function handleMessage(message: RuntimeMessage): Promise<RuntimeResponse> {
+function isTrustedExtensionSender(sender: chrome.runtime.MessageSender): boolean {
+  if (sender.id !== chrome.runtime.id) return false;
+  // Content scripts report the page origin, so only chrome-extension:// senders qualify.
+  const origin = sender.origin ?? sender.url;
+  if (typeof origin !== 'string') return false;
+  return origin === `chrome-extension://${chrome.runtime.id}` || origin.startsWith(`chrome-extension://${chrome.runtime.id}/`);
+}
+
+async function handleMessage(message: RuntimeMessage, sender: chrome.runtime.MessageSender): Promise<RuntimeResponse> {
   try {
     if (message.type === 'SYNC_COMPANION') {
       if (!COMPANION_ENABLED) {
@@ -267,6 +279,10 @@ async function handleMessage(message: RuntimeMessage): Promise<RuntimeResponse> 
     let state = await readState();
     let captureSettingsChanged = false;
     let captureAuthorizationChanged = false;
+    let undoOffer: RuntimeResponse['undo'];
+    let clearUndo = false;
+    let consumeUndo = false;
+    let pendingDeletion: Clip | null = null;
     switch (message.type) {
       case 'GET_STATE':
         return { ok: true, state, permissions: { websiteAccess: await hasWebsiteAccess() } };
@@ -296,8 +312,29 @@ async function handleMessage(message: RuntimeMessage): Promise<RuntimeResponse> 
         state.clips.sort((a, b) => b.updatedAt - a.updatedAt);
         break;
       case 'DELETE_CLIP':
+        pendingDeletion = state.clips.find((clip) => clip.id === message.payload.id) ?? null;
         state = { ...state, clips: state.clips.filter((clip) => clip.id !== message.payload.id) };
         break;
+      case 'RESTORE_DELETED_CLIP': {
+        if (!isTrustedExtensionSender(sender)) {
+          throw new Error('Undo is only available from the Clipboard+ interface.');
+        }
+        const tombstone = await readTombstone();
+        if (!tombstoneIsUsable(tombstone, message.payload.token)) {
+          throw new Error('That undo offer has expired.');
+        }
+        const restored = restoreDeletedClip(state, tombstone);
+        if (restored.outcome === 'expired') {
+          throw new Error('This clip is past your automatic cleanup window and was not restored.');
+        }
+        if (restored.outcome === 'capacity') {
+          throw new Error('Could not restore this clip: newer clips have filled your history limit.');
+        }
+        state = restored.state;
+        // The offer is only consumed once the restored state is durably saved.
+        consumeUndo = true;
+        break;
+      }
       case 'UPDATE_SETTINGS':
         state = { ...state, settings: sanitizeSettings(state.settings, message.payload) };
         state = maintainState(state);
@@ -309,14 +346,29 @@ async function handleMessage(message: RuntimeMessage): Promise<RuntimeResponse> 
         break;
       case 'CLEAR_HISTORY':
         state = { ...state, clips: state.clips.filter((clip) => clip.favorite) };
+        clearUndo = true;
         break;
       case 'CLEAR_ALL':
         state = { ...state, clips: [] };
+        clearUndo = true;
         break;
       default:
         throw new Error('Unknown Clipboard+ action.');
     }
     await writeState(state);
+    if (clearUndo) await clearTombstone();
+    if (consumeUndo) await clearTombstone();
+    if (pendingDeletion) {
+      // The deletion is already durable, so the undo offer is created only now and
+      // a session-storage failure simply means no undo is offered.
+      try {
+        const tombstone = createTombstone(pendingDeletion);
+        await writeTombstone(tombstone);
+        undoOffer = { token: tombstone.token, expiresAt: tombstone.expiresAt };
+      } catch {
+        undoOffer = undefined;
+      }
+    }
     const websiteAccess = captureSettingsChanged
       ? await syncCaptureRegistration(state, captureAuthorizationChanged)
       : await hasWebsiteAccess();
@@ -327,7 +379,7 @@ async function handleMessage(message: RuntimeMessage): Promise<RuntimeResponse> 
         companionConnected = false;
       }
     }
-    return { ok: true, state, permissions: { websiteAccess } };
+    return { ok: true, state, undo: undoOffer, permissions: { websiteAccess } };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : 'Unexpected error.' };
   }
@@ -335,16 +387,19 @@ async function handleMessage(message: RuntimeMessage): Promise<RuntimeResponse> 
 
 let messageQueue = Promise.resolve<RuntimeResponse>({ ok: true });
 
-function enqueueMessage(message: RuntimeMessage): Promise<RuntimeResponse> {
+function enqueueMessage(
+  message: RuntimeMessage,
+  sender: chrome.runtime.MessageSender = { id: chrome.runtime.id } as chrome.runtime.MessageSender,
+): Promise<RuntimeResponse> {
   messageQueue = messageQueue.then(
-    () => handleMessage(message),
-    () => handleMessage(message),
+    () => handleMessage(message, sender),
+    () => handleMessage(message, sender),
   );
   return messageQueue;
 }
 
-chrome.runtime.onMessage.addListener((message: RuntimeMessage, _sender, sendResponse) => {
-  void enqueueMessage(message).then(sendResponse);
+chrome.runtime.onMessage.addListener((message: RuntimeMessage, sender, sendResponse) => {
+  void enqueueMessage(message, sender).then(sendResponse);
   return true;
 });
 

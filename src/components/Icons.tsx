@@ -24,3 +24,8 @@ export const CheckIcon = (props: IconProps) => <IconBase {...props}><path d="m5 
 export const XIcon = (props: IconProps) => <IconBase {...props}><path d="M6 6l12 12M18 6 6 18" /></IconBase>;
 export const PauseIcon = (props: IconProps) => <IconBase {...props}><path d="M9 5v14M15 5v14" /></IconBase>;
 export const PlayIcon = (props: IconProps) => <IconBase {...props}><path d="m8 5 11 7-11 7V5Z" /></IconBase>;
+export const EyeIcon = (props: IconProps) => <IconBase {...props}><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" /><circle cx="12" cy="12" r="3" /></IconBase>;
+export const CopyOriginalIcon = (props: IconProps) => <IconBase {...props}><rect x="8" y="8" width="12" height="13" rx="2" /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h2" /><path d="M12 12.5h4M12 16h3" /></IconBase>;
+export const InfoIcon = (props: IconProps) => <IconBase {...props}><circle cx="12" cy="12" r="9" /><path d="M12 11v6M12 7.6v.6" /></IconBase>;
+export const RefreshIcon = (props: IconProps) => <IconBase {...props}><path d="M20 11a8 8 0 1 0-2.3 5.6" /><path d="M20 5v6h-6" /></IconBase>;
+export const DownloadIcon = (props: IconProps) => <IconBase {...props}><path d="M12 4v11M8 11l4 4 4-4" /><path d="M5 19h14" /></IconBase>;

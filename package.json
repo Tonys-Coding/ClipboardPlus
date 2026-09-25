@@ -1,7 +1,7 @@
 {
   "name": "clipboard-plus",
   "private": true,
-  "version": "1.7.1",
+  "version": "1.8.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -16,6 +16,7 @@
     "test": "vitest run",
     "test:e2e": "npm run build && node scripts/e2e-smoke.mjs",
     "test:e2e:store": "npm run build:store && node scripts/e2e-store-smoke.mjs",
+    "test:e2e:store:headed": "npm run build:store && node scripts/e2e-store-headed.mjs",
     "test:native": "swift run --package-path native ClipboardPlusStoreCheck && swift build -c release --package-path native --product ClipboardPlusCompanion && swift build -c release --package-path native --product ClipboardPlusNativeHost && node scripts/test-native-host.mjs",
     "install:companion": "zsh scripts/install-macos-companion.sh",
     "test:watch": "vitest"

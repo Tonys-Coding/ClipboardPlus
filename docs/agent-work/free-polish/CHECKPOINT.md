@@ -1,0 +1,15 @@
+# Free polish checkpoint
+
+- Baseline: `0a0e91c` / v1.7.1, original checkout clean on `main`.
+- Current target: v1.8.0, all seven requested roadmap items (1, 2, 3, 4, 7, 8, 10), permanently free.
+- Worker: `/root/free_polish`, native `astra_flash_builder`, shared workspace, sole implementation writer. Session metadata confirms model `openrouter/deepseek-v4.1-flash` at high effort; upstream provider request metadata not available for independent verification.
+- Initial implementation returned 71 passing unit/component tests, both builds and Chromium smoke suites, store ZIP inspection, preview/About screenshots. Root reviewed actual runtime code, tests, documentation and screenshots; result: changes requested, not yet accepted.
+- Required corrections dispatched together: genuine initial-load timeout/retry; capture listener validation and accurate resume; Undo capacity/write-failure semantics; fresh diagnostics and shortcut status; dialog transition/deletion focus handling; stronger store grant/revocation/recovery and exact-copy browser assertions; personal-path cleanup.
+- Additional availability finding: repository is private. Public users cannot access its Issues/releases pages. Worker will link public Pages support and add a public release-notes page.
+- Hosting resolved: public Pages content is in `Tonys-Coding/Tonys-Coding.github.io`, under `ClipboardPlus/`, serving main/root. The app repository does not host Pages. Root prepared clean isolated site checkout `/tmp/clipboard-plus-site-release.Z1O0Tp` at `a9cabf8` for a reviewed HTML/document whitelist update after code acceptance; no site edits or publication yet.
+- Preserve Google verification HTML. Native binary version stays 1.7.1 since native behavior is untouched; installer reload advice becomes version-neutral.
+- Root verified origin `Tonys-Coding/ClipboardPlus`, main at baseline, local commit identity `TonysProjects <211549399+Tonys-Coding@users.noreply.github.com>`, admin access, existing v1.7.1 release, and no remote v1.8.0 tag. Public support and privacy Pages URLs return HTTP 200.
+- No commit/tag/push/publication has occurred. Standing user authorization covers GitHub final releases. Chrome Web Store submission is not part of this implementation run.
+- Correction worker finished and was interrupted after completion. Root accepted all seven requirements after reviewing the corrected source and evidence, adding five edge-case tests, and rerunning typecheck, lint, both browser suites/build validators and packaging. Final unit/component total: 108 passing tests.
+- Headed store-profile test passed real optional grant, existing-tab Command+C capture, actual shortcut POPUP context, intentional permission revocation, explicit UI recovery and capture without refresh. The report includes the evidence and final ZIP digest.
+- Five reviewed public files are prepared in the isolated site checkout; verification HTML, privacy policy and assets remain unchanged. Next: publish the authorized v1.8.0 source/tag/ZIP release and public documentation, verify remote digests/versions and clean tracking. Chrome Web Store upload remains with the owner.

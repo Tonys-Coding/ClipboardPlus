@@ -2,6 +2,16 @@
 
 Clipboard+'s Git history was reconstructed from local development milestones after versions 1.0.0 through 1.4.2 had already been built. Those tags preserve the rollout order; their publication timestamps are intentionally not backdated. Releases from 1.5.0 onward follow the live project history.
 
+## 1.8.0
+
+- Add keyboard access: the suggested, user-customizable Alt+Shift+C shortcut opens Clipboard+ and focuses search, and the arrow, Home, and End keys move through the visible favorites and recent clips without disturbing typing.
+- Add an eight-second Undo for individual clip deletion. Bulk clearing stays confirmed and irreversible, and restoration validates an expiring extension-internal token before it restores the original clip, timestamps, favorite state, and metadata.
+- Add a read-only Preview dialog that shows the complete clip with preserved whitespace, type, size, and source details.
+- Add Copy original for smart snippets in the clip menu and the preview, copying the stored text exactly and bypassing fill-in fields and paste transformations.
+- Distinguish checking, active, paused, excluded, restricted, missing permission, disabled, and unreachable listeners, with relevant recovery controls and rechecks after settings, permission, pause, and timer changes.
+- Bring shared keyboard and focus behavior to the edit, preview, snippet, and transformation dialogs and to clip menus, keep one menu open at a time, and announce copy success through a polite live region.
+- Add an About and help section with the runtime version, current shortcut and shortcut settings, release notes, support links, and a redacted troubleshooting copy that never includes clipboard contents, page addresses, excluded domains, or identifiers.
+
 ## 1.7.1
 
 - Activate automatic capture immediately in eligible website tabs that were already open when access was enabled or Clipboard+ was updated.

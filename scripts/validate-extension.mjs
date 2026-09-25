@@ -8,10 +8,16 @@ const outputDirectory = resolve(import.meta.dirname, '..', 'dist');
 const manifest = JSON.parse(await readFile(resolve(outputDirectory, 'manifest.json'), 'utf8'));
 
 if (manifest.manifest_version !== 3) throw new Error('The generated extension is not Manifest V3.');
-if (manifest.version !== '1.7.1') throw new Error(`Expected extension version 1.7.1, received ${manifest.version}.`);
+if (manifest.version !== '1.8.0') throw new Error(`Expected extension version 1.8.0, received ${manifest.version}.`);
 if (profile === 'store' && manifest.host_permissions?.length) throw new Error('Website access must not be a required store permission.');
 if (manifest.content_scripts?.length) throw new Error('Automatic capture must be registered only after consent.');
 if (!manifest.permissions.includes('alarms')) throw new Error('Automatic retention maintenance requires the alarms permission.');
+
+const actionCommand = manifest.commands?._execute_action;
+if (!actionCommand) throw new Error('The popup action command is required for keyboard access.');
+if (actionCommand.suggested_key?.default !== 'Alt+Shift+C' || actionCommand.suggested_key?.mac !== 'Alt+Shift+C') {
+  throw new Error('The suggested popup shortcut must be Alt+Shift+C on every platform.');
+}
 
 const expectedOrigins = ['http://*/*', 'https://*/*'];
 if (JSON.stringify(manifest.optional_host_permissions) !== JSON.stringify(expectedOrigins)) {

@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useMemo, useState } from 'react';
 import { CheckIcon, WandIcon, XIcon } from '../components/Icons';
 import {
   applyPasteTransform,
@@ -9,6 +9,7 @@ import {
   type PasteTransformId,
 } from '../lib/pasteTools';
 import type { Clip } from '../lib/types';
+import { useDialogA11y } from './dialogA11y';
 
 interface DialogBaseProps {
   clip: Clip;
@@ -24,16 +25,6 @@ interface TransformDialogProps extends DialogBaseProps {
   onUseResult: (content: string, clip: Clip) => void;
 }
 
-function useEscapeToClose(onClose: () => void) {
-  useEffect(() => {
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', closeOnEscape);
-    return () => document.removeEventListener('keydown', closeOnEscape);
-  }, [onClose]);
-}
-
 export function SnippetDialog({ clip, template, onClose, onCopy }: SnippetDialogProps) {
   const fields = useMemo(() => extractSnippetFields(template), [template]);
   const [values, setValues] = useState<Record<string, string>>(() => Object.fromEntries(
@@ -41,7 +32,7 @@ export function SnippetDialog({ clip, template, onClose, onCopy }: SnippetDialog
   ));
   const preview = useMemo(() => fillSnippet(template, values), [template, values]);
   const complete = fields.every((field) => Boolean(values[field.key]?.trim()));
-  useEscapeToClose(onClose);
+  const dialogRef = useDialogA11y<HTMLFormElement>(onClose);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -50,7 +41,7 @@ export function SnippetDialog({ clip, template, onClose, onCopy }: SnippetDialog
 
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <form className="edit-modal smart-modal" onSubmit={(event) => void submit(event)} role="dialog" aria-modal="true" aria-labelledby="snippet-heading">
+      <form ref={dialogRef} className="edit-modal smart-modal" onSubmit={(event) => void submit(event)} role="dialog" aria-modal="true" aria-labelledby="snippet-heading">
         <div className="modal-heading">
           <div><span className="modal-kicker">Smart snippet</span><h2 id="snippet-heading">Fill in the fields</h2></div>
           <button type="button" className="icon-button" aria-label="Close snippet dialog" onClick={onClose}><XIcon /></button>
@@ -61,7 +52,7 @@ export function SnippetDialog({ clip, template, onClose, onCopy }: SnippetDialog
               <span>{field.label}</span>
               <input
                 id={`snippet-field-${index}`}
-                autoFocus={index === 0}
+                data-initial-focus={index === 0 ? 'true' : undefined}
                 value={values[field.key] ?? ''}
                 onChange={(event) => setValues((current) => ({ ...current, [field.key]: event.target.value }))}
                 placeholder={field.defaultValue || `Enter ${field.label}`}
@@ -86,11 +77,11 @@ export function TransformDialog({ clip, onClose, onUseResult }: TransformDialogP
   const firstAvailable = options.find((option) => !option.disabled)?.id ?? null;
   const [selected, setSelected] = useState<PasteTransformId | null>(firstAvailable);
   const result = useMemo(() => selected ? applyPasteTransform(clip.content, selected) : clip.content, [clip.content, selected]);
-  useEscapeToClose(onClose);
+  const dialogRef = useDialogA11y<HTMLDivElement>(onClose);
 
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <div className="edit-modal smart-modal" role="dialog" aria-modal="true" aria-labelledby="transform-heading">
+      <div ref={dialogRef} className="edit-modal smart-modal" role="dialog" aria-modal="true" aria-labelledby="transform-heading">
         <div className="modal-heading">
           <div><span className="modal-kicker">Paste transformations</span><h2 id="transform-heading">Transform and copy</h2></div>
           <button type="button" className="icon-button" aria-label="Close transformation dialog" onClick={onClose}><XIcon /></button>
@@ -102,6 +93,7 @@ export function TransformDialog({ clip, onClose, onUseResult }: TransformDialogP
               type="button"
               disabled={option.disabled}
               aria-pressed={selected === option.id}
+              data-initial-focus={!option.disabled && option.id === firstAvailable ? 'true' : undefined}
               className={selected === option.id ? 'selected' : ''}
               onClick={() => setSelected(option.id)}
             >

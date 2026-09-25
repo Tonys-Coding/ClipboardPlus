@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Clipboard+",
   "description": "A private, searchable clipboard history for text, links, code, and reusable snippets.",
-  "version": "1.7.1",
+  "version": "1.8.0",
   "permissions": ["storage", "activeTab", "clipboardWrite", "scripting", "contextMenus", "alarms"],
   "optional_host_permissions": ["http://*/*", "https://*/*"],
   "incognito": "not_allowed",
@@ -19,6 +19,15 @@
       "32": "icons/icon-32.png"
     },
     "default_popup": "popup.html"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+Shift+C",
+        "mac": "Alt+Shift+C"
+      },
+      "description": "Open Clipboard+ and focus search"
+    }
   },
   "background": {
     "service_worker": "background.js",

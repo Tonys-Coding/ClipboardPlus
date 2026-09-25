@@ -8,25 +8,26 @@ A private, searchable clipboard history for text, links, code, and reusable snip
 
 Clipboard+ keeps the text and links you reuse close at hand without sending your clipboard history to a remote service.
 
-Click any saved clip to copy it again. Search recent history, pin favorites, classify text, links, and recognizable code, create reusable fill-in snippets, apply local paste transformations, add clips manually, or save the current tab.
+Click any saved clip to copy it again. Search recent history, pin favorites, classify text, links, and recognizable code, create reusable fill-in snippets, apply local paste transformations, preview a full clip, copy a snippet's original text, add clips manually, or save the current tab. Opening the popup with the suggested Alt+Shift+C shortcut focuses search, and the arrow keys move through favorites and recent clips.
 
 Automatic website capture is optional. It starts only after you review the disclosure and approve access to ordinary websites. You can pause it, choose text/link/code categories, omit source details, remove access, or exclude individual domains at any time. Password inputs and recognized authentication and payment fields are ignored. Chrome internal and other browser-owned pages cannot be captured.
 
-Clipboard+ v1.7 adds optional automatic cleanup and a local storage overview. It has no account system, analytics, advertising, or cloud synchronization. History and settings stay in Chrome's local extension storage on your device.
+Clipboard+ v1.8 adds keyboard access, eight-second undo for single deletions, full clip preview, original copying for snippets, precise capture-state feedback, shared dialog and menu accessibility, and an About and help section with a redacted troubleshooting copy. It has no account system, analytics, advertising, or cloud synchronization. History and settings stay in Chrome's local extension storage on your device.
 
-Everything included through v1.7.1 is a permanent free core. Future paid services, if introduced, will apply only to new functionality such as encrypted cross-device synchronization.
+Everything included through v1.8.0 is a permanent free core. Future paid services, if introduced, will apply only to new functionality such as encrypted cross-device synchronization.
 
 ## Category and language
 
 - Category: Productivity
 - Primary language: English
 - Mature content: No
-- Contains paid functionality: No for v1.7.1
+- Contains paid functionality: No for v1.8.0
 - Initial visibility: Unlisted
 
 ## URLs
 
 - Homepage: https://tonys-coding.github.io/ClipboardPlus/
+- Release notes: https://tonys-coding.github.io/ClipboardPlus/release-notes.html
 - Privacy: https://tonys-coding.github.io/ClipboardPlus/privacy.html
 - Support: https://tonys-coding.github.io/ClipboardPlus/support.html
 - Data deletion: https://tonys-coding.github.io/ClipboardPlus/data-deletion.html

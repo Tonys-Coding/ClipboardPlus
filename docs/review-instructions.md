@@ -9,5 +9,9 @@
 7. Select an automatic-cleanup interval and confirm expired non-favorites are removed while favorites remain.
 8. Review the local category counts and storage estimate, then use Clear history and Clear all data to verify local deletion.
 9. Turn Automatic web capture off. Confirm Chrome removes the optional website permission and subsequent webpage copies are not saved.
+10. Open the popup with the Alt+Shift+C shortcut (or reassign it on Chrome's shortcuts page), confirm search is focused, press the Down arrow to enter the clip list, and press Enter to copy the focused clip. Right-click does not open the preview automatically.
+11. From a clip's three-dot menu, open Preview to read the complete clip with preserved whitespace, then use Copy. For a smart snippet, use Copy original to copy the stored `{{field}}` text instead of the filled result, and confirm the saved clip is unchanged.
+12. Delete a single clip and confirm the eight-second Undo notice restores it in its original position. Clear history and clear all data remain irreversible. Clipboard+ also shows one accurate capture state — off, missing permission, excluded, restricted, paused, or unreachable listener — with the matching action.
+13. Open Settings → About & help. Confirm the manifest version, current shortcut, and shortcut settings link appear, and that Copy troubleshooting details copies a short checklist with no clipboard contents, page addresses, excluded domains, or identifiers.
 
-The v1.7.1 store package has no account, backend, analytics, advertisements, native messaging, remote executable code, or off-device clipboard processing.
+The v1.8.0 store package has no account, backend, analytics, advertisements, native messaging, remote executable code, or off-device clipboard processing.
