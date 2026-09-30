@@ -2,6 +2,13 @@
 
 Clipboard+'s Git history was reconstructed from local development milestones after versions 1.0.0 through 1.4.2 had already been built. Those tags preserve the rollout order; their publication timestamps are intentionally not backdated. Releases from 1.5.0 onward follow the live project history.
 
+## 1.8.2
+
+- Build the Chrome Web Store profile into `dist-store` so running the store build or its validation, packaging, asset, and end-to-end scripts never overwrites the development `dist` folder that is loaded as the unpacked extension. The two profiles can be built in any order and each keeps its own manifest, so the development build retains Native Messaging while the store build excludes it.
+- Import queued companion captures in the development profile in the background on service-worker startup and on a one-minute alarm, so new system-wide copies reach history even when the popup and Settings page are closed.
+- Route every companion sync through one serialized queue, so overlapping startup, alarm, popup, and Settings triggers import each capture once, never acknowledge a capture before its storage write succeeds, and retry on the next trigger after a failure.
+- Keep the public store permission profile unchanged and confirm the store bundle contains no native host calls after tree-shaking.
+
 ## 1.8.1
 
 - Keep favorite clips exclusively in the Saved section instead of repeating them in All or the text, link, and code sections.

@@ -6,6 +6,17 @@
   <p class="lede">Everything in these releases is part of the permanent free core. No account, analytics, advertising, or cloud service is required.</p>
 
   <div class="card">
+    <h2>1.8.2</h2>
+    <p>Steadier local capture for the development companion.</p>
+    <ul>
+      <li>The Chrome Web Store build now writes to its own folder, so running the store build or its packaging scripts never overwrites the development extension folder loaded in Chrome.</li>
+      <li>In the development profile, queued macOS captures import in the background on startup and on a short alarm, so new copies reach history even when the popup and Settings page are closed.</li>
+      <li>Overlapping background, popup, and Settings syncs run one at a time, import each capture once, and only acknowledge a capture after it has been saved.</li>
+      <li>The public store build keeps the same permission profile and contains no native companion code.</li>
+    </ul>
+  </div>
+
+  <div class="card">
     <h2>1.8.1</h2>
     <p>One clear home for every clip.</p>
     <ul>

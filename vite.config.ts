@@ -5,6 +5,7 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
   const companionEnabled = mode !== 'store';
+  const outDir = companionEnabled ? 'dist' : 'dist-store';
   return {
   plugins: [
     react(),
@@ -12,7 +13,7 @@ export default defineConfig(({ mode }) => {
       name: 'clipboard-plus-manifest-profile',
       async closeBundle() {
         if (!companionEnabled) return;
-        const manifestPath = resolve(import.meta.dirname, 'dist', 'manifest.json');
+        const manifestPath = resolve(import.meta.dirname, outDir, 'manifest.json');
         const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as { permissions: string[]; host_permissions?: string[] };
         if (!manifest.permissions.includes('nativeMessaging')) manifest.permissions.push('nativeMessaging');
         manifest.host_permissions = ['http://*/*', 'https://*/*'];
@@ -29,7 +30,7 @@ export default defineConfig(({ mode }) => {
     css: true,
   },
   build: {
-    outDir: 'dist',
+    outDir,
     emptyOutDir: true,
     rollupOptions: {
       input: {

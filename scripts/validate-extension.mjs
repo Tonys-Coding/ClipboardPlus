@@ -4,11 +4,11 @@ import { resolve } from 'node:path';
 const profile = process.argv[2] ?? 'development';
 if (!['development', 'store'].includes(profile)) throw new Error(`Unknown validation profile: ${profile}`);
 
-const outputDirectory = resolve(import.meta.dirname, '..', 'dist');
+const outputDirectory = resolve(import.meta.dirname, '..', profile === 'store' ? 'dist-store' : 'dist');
 const manifest = JSON.parse(await readFile(resolve(outputDirectory, 'manifest.json'), 'utf8'));
 
 if (manifest.manifest_version !== 3) throw new Error('The generated extension is not Manifest V3.');
-if (manifest.version !== '1.8.1') throw new Error(`Expected extension version 1.8.1, received ${manifest.version}.`);
+if (manifest.version !== '1.8.2') throw new Error(`Expected extension version 1.8.2, received ${manifest.version}.`);
 if (profile === 'store' && manifest.host_permissions?.length) throw new Error('Website access must not be a required store permission.');
 if (manifest.content_scripts?.length) throw new Error('Automatic capture must be registered only after consent.');
 if (!manifest.permissions.includes('alarms')) throw new Error('Automatic retention maintenance requires the alarms permission.');

@@ -501,10 +501,10 @@ try {
   const aboutPage = await context.newPage();
   await aboutPage.goto(`chrome-extension://${extensionId}/options.html`);
   await aboutPage.getByText('About & help').waitFor({ state: 'attached' });
-  await aboutPage.getByRole('heading', { name: 'Clipboard+ 1.8.1' }).waitFor({ state: 'attached' });
+  await aboutPage.getByRole('heading', { name: 'Clipboard+ 1.8.2' }).waitFor({ state: 'attached' });
   await aboutPage.getByText(/to open Clipboard\+ and focus search/).waitFor({ state: 'attached' });
   const diagnostics = await aboutPage.locator('.diagnostics-preview').textContent();
-  if (!diagnostics.includes('Version: 1.8.1')) throw new Error('Troubleshooting details omitted the runtime version.');
+  if (!diagnostics.includes('Version: 1.8.2')) throw new Error('Troubleshooting details omitted the runtime version.');
   for (const secret of ['Copied with Command C', 'filtered.example', '127.0.0.1']) {
     if (diagnostics.includes(secret)) throw new Error(`Troubleshooting details leaked "${secret}".`);
   }
@@ -547,7 +547,7 @@ try {
     captureRecoveredOnOpenTab: true,
     externalRevocationEvidence,
     permissionRevocationProfile: 'store build (development build requires website access)',
-    aboutVersion: '1.8.1',
+    aboutVersion: '1.8.2',
     favoritesExclusiveToSaved: true,
     troubleshootingRedacted: true,
     screenshots: ['popup-preview.png', 'options-about.png'],

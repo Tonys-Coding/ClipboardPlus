@@ -5,7 +5,7 @@ import { mkdtemp } from 'node:fs/promises';
 import { chromium } from '@playwright/test';
 
 const root = resolve(import.meta.dirname, '..');
-const extensionPath = resolve(root, 'dist');
+const extensionPath = resolve(root, 'dist-store');
 const output = resolve(root, 'store-assets');
 const profile = await mkdtemp(join(tmpdir(), 'clipboard-plus-assets-'));
 await mkdir(output, { recursive: true });

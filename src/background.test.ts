@@ -27,7 +27,74 @@ const session = new Map<string, unknown>();
 let messageListener: MessageListener | null = null;
 let alarmListener: ((alarm: { name: string }) => void) | null = null;
 let permissionRemovedListener: ((permissions: { origins?: string[] }) => void) | null = null;
+let startupListener: (() => void) | null = null;
+let installedListener: ((details: { reason: string }) => void) | null = null;
 let localWriteFailures = 0;
+
+interface NativeHost {
+  pending: Clip[];
+  acks: string[][];
+  history: unknown[][];
+  unavailable: boolean;
+  gate: Promise<void> | null;
+  inFlight: number;
+  maxInFlight: number;
+}
+
+let native: NativeHost;
+
+/** Emulates the native companion host: a pending queue that shrinks on acknowledge. */
+function installNativeHost(): void {
+  native = { pending: [], acks: [], history: [], unavailable: false, gate: null, inFlight: 0, maxInFlight: 0 };
+  (chrome.runtime.sendNativeMessage as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+    (
+      _host: string,
+      message: { action: string; ids?: string[]; clips?: unknown[] },
+      callback: (response: unknown) => void,
+    ) => {
+      void (async () => {
+        native.inFlight += 1;
+        native.maxInFlight = Math.max(native.maxInFlight, native.inFlight);
+        try {
+          if (native.gate) await native.gate;
+          if (native.unavailable) {
+            (chrome.runtime as unknown as { lastError?: { message: string } }).lastError = {
+              message: 'Specified native messaging host not found.',
+            };
+            callback(undefined);
+            (chrome.runtime as unknown as { lastError?: { message: string } }).lastError = undefined;
+            return;
+          }
+          if (message.action === 'getPending') {
+            callback({ ok: true, clips: structuredClone(native.pending), hasMore: false });
+            return;
+          }
+          if (message.action === 'acknowledge') {
+            const ids = message.ids ?? [];
+            native.acks.push(ids);
+            native.pending = native.pending.filter((clip) => !ids.includes(clip.id));
+            callback({ ok: true });
+            return;
+          }
+          if (message.action === 'replaceHistory') {
+            native.history.push((message.clips as unknown[]) ?? []);
+            callback({ ok: true });
+            return;
+          }
+          callback({ ok: false, error: 'Unknown native action.' });
+        } finally {
+          native.inFlight -= 1;
+        }
+      })();
+    },
+  );
+}
+
+/** Drains the background service worker's promise chains and one macrotask. */
+async function flushAsync(): Promise<void> {
+  for (let index = 0; index < 60; index += 1) await Promise.resolve();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+}
 
 const makeClip = (id: string, updatedAt: number, extra: Partial<Clip> = {}): Clip => ({
   id,
@@ -94,13 +161,23 @@ beforeEach(async () => {
   messageListener = null;
   alarmListener = null;
   permissionRemovedListener = null;
+  startupListener = null;
+  installedListener = null;
 
   vi.stubGlobal('chrome', {
     runtime: {
       id: EXTENSION_ID,
       lastError: undefined,
-      onInstalled: { addListener: vi.fn() },
-      onStartup: { addListener: vi.fn() },
+      onInstalled: {
+        addListener: vi.fn((listener: (details: { reason: string }) => void) => {
+          installedListener = listener;
+        }),
+      },
+      onStartup: {
+        addListener: vi.fn((listener: () => void) => {
+          startupListener = listener;
+        }),
+      },
       onMessage: {
         addListener: vi.fn((listener: MessageListener) => {
           messageListener = listener;
@@ -141,6 +218,7 @@ beforeEach(async () => {
     },
     tabs: { query: vi.fn(async () => []) },
   });
+  installNativeHost();
 
   await import('./background');
   await Promise.resolve();
@@ -313,5 +391,100 @@ describe('service worker deletion and undo', () => {
 
     expect(storedState().settings.autoCapture).toBe(true);
     expect(chrome.scripting.unregisterContentScripts).not.toHaveBeenCalled();
+  });
+});
+
+describe('automatic companion queue sync', () => {
+  it('imports queued native captures on startup without opening the popup', async () => {
+    seedState(stateWith([makeClip('existing', 1)]));
+    native.pending = [makeClip('native-newer', 20), makeClip('native-older', 10)];
+
+    startupListener?.();
+    await vi.waitFor(() => expect(storedState().clips).toHaveLength(3));
+
+    expect(storedState().clips.map((clip) => clip.id)).toEqual(['native-newer', 'native-older', 'existing']);
+    expect(native.acks).toEqual([['native-newer', 'native-older']]);
+    expect(native.pending).toEqual([]);
+  });
+
+  it('imports queued native captures on the companion sync alarm', async () => {
+    seedState(stateWith([]));
+    native.pending = [makeClip('alarm-clip', 5)];
+
+    alarmListener?.({ name: 'clipboard-plus-companion-sync' });
+    await vi.waitFor(() => expect(storedState().clips.map((clip) => clip.id)).toEqual(['alarm-clip']));
+
+    expect(native.acks).toEqual([['alarm-clip']]);
+    expect(native.pending).toEqual([]);
+  });
+
+  it('imports queued native captures after a browser update', async () => {
+    seedState(stateWith([]));
+    native.pending = [makeClip('update-clip', 5)];
+
+    installedListener?.({ reason: 'update' });
+    await vi.waitFor(() => expect(storedState().clips.map((clip) => clip.id)).toEqual(['update-clip']));
+
+    expect(native.acks).toEqual([['update-clip']]);
+  });
+
+  it('serializes overlapping startup, alarm, and popup syncs into one import each', async () => {
+    seedState(stateWith([]));
+    native.pending = [makeClip('concurrent-a', 1), makeClip('concurrent-b', 2)];
+
+    let releaseGate: () => void = () => undefined;
+    native.gate = new Promise<void>((resolve) => {
+      releaseGate = resolve;
+    });
+
+    startupListener?.();
+    alarmListener?.({ name: 'clipboard-plus-companion-sync' });
+    const popupSync = send({ type: 'SYNC_COMPANION' });
+
+    await flushAsync();
+    // Only one native round trip may be outstanding at a time.
+    expect(native.maxInFlight).toBe(1);
+
+    releaseGate();
+    native.gate = null;
+    await popupSync;
+    await vi.waitFor(() => expect(storedState().clips).toHaveLength(2));
+
+    expect(storedState().clips.map((clip) => clip.id).sort()).toEqual(['concurrent-a', 'concurrent-b']);
+    const acknowledged = native.acks.flat();
+    expect(acknowledged.filter((id) => id === 'concurrent-a')).toHaveLength(1);
+    expect(acknowledged.filter((id) => id === 'concurrent-b')).toHaveLength(1);
+  });
+
+  it('does not acknowledge a batch whose storage write fails, then imports on retry', async () => {
+    seedState(stateWith([]));
+    native.pending = [makeClip('retry-clip', 1)];
+    localWriteFailures = 1;
+
+    alarmListener?.({ name: 'clipboard-plus-companion-sync' });
+    await flushAsync();
+
+    expect(native.acks).toEqual([]);
+    expect(native.pending.map((clip) => clip.id)).toEqual(['retry-clip']);
+    expect(storedState().clips).toEqual([]);
+
+    alarmListener?.({ name: 'clipboard-plus-companion-sync' });
+    await vi.waitFor(() => expect(storedState().clips.map((clip) => clip.id)).toEqual(['retry-clip']));
+
+    expect(native.acks).toEqual([['retry-clip']]);
+    expect(native.pending).toEqual([]);
+  });
+
+  it('reports the companion as unavailable without importing when the host is missing', async () => {
+    seedState(stateWith([makeClip('kept', 1)]));
+    native.pending = [makeClip('unreached', 1)];
+    native.unavailable = true;
+
+    const response = await send({ type: 'SYNC_COMPANION' });
+
+    expect(response.companion?.available).toBe(false);
+    expect(native.acks).toEqual([]);
+    expect(native.pending.map((clip) => clip.id)).toEqual(['unreached']);
+    expect(storedState().clips.map((clip) => clip.id)).toEqual(['kept']);
   });
 });

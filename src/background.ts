@@ -8,6 +8,7 @@ import type { Clip, ClipType, RetentionDays, RuntimeMessage, RuntimeResponse, Se
 const NATIVE_HOST = 'com.clipboardplus.native';
 const CAPTURE_SCRIPT_ID = 'clipboard-plus-web-capture';
 const MAINTENANCE_ALARM = 'clipboard-plus-maintenance';
+const COMPANION_SYNC_ALARM = 'clipboard-plus-companion-sync';
 
 interface NativeHostResponse {
   ok: boolean;
@@ -133,6 +134,12 @@ async function syncCaptureRegistration(providedState?: StorageState, activateOpe
 async function initializeExtension(openOnboarding: boolean): Promise<void> {
   const state = await ensureState();
   chrome.alarms.create(MAINTENANCE_ALARM, { periodInMinutes: 60 });
+  if (COMPANION_ENABLED) {
+    // Import queued companion captures without waiting for the popup or options page.
+    // The sync runs on the shared message queue so it cannot race other state writes.
+    chrome.alarms.create(COMPANION_SYNC_ALARM, { periodInMinutes: 1 });
+    void enqueueMessage({ type: 'SYNC_COMPANION' });
+  }
   await syncCaptureRegistration(state, true);
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
@@ -160,6 +167,10 @@ chrome.runtime.onStartup.addListener(() => {
 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
+  if (COMPANION_ENABLED && alarm.name === COMPANION_SYNC_ALARM) {
+    void enqueueMessage({ type: 'SYNC_COMPANION' });
+    return;
+  }
   if (alarm.name !== MAINTENANCE_ALARM) return;
   void readState();
   // Drops an expired undo tombstone instead of retaining the deleted clip.

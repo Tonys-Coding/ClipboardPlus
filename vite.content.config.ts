@@ -1,10 +1,10 @@
 import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   publicDir: false,
   build: {
-    outDir: 'dist',
+    outDir: mode === 'store' ? 'dist-store' : 'dist',
     emptyOutDir: false,
     lib: {
       entry: resolve(import.meta.dirname, 'src/content.ts'),
@@ -13,4 +13,4 @@ export default defineConfig({
       fileName: () => 'content.js',
     },
   },
-});
+}));

@@ -9,7 +9,7 @@ npm install
 npm run build
 ```
 
-Load the generated `dist` folder through `chrome://extensions` with **Developer mode → Load unpacked**.
+Load the generated `dist` folder through `chrome://extensions` with **Developer mode → Load unpacked**. The development profile stays in `dist`; the Chrome Web Store profile is written to `dist-store` so a store build never overwrites the unpacked extension you are running.
 
 Other useful commands:
 
@@ -25,15 +25,17 @@ npm run test:native
 npm run package:store
 ```
 
-`npm run build` creates the local development build with Native Messaging support. `npm run build:store` creates the Chrome Web Store profile without Native Messaging or companion UI. `npm run package:store` verifies that profile and writes a manifest-root upload ZIP under `artifacts/`.
+`npm run build` creates the local development build in `dist` with Native Messaging support and the companion UI. `npm run build:store` creates the Chrome Web Store profile in `dist-store` without Native Messaging or companion UI. The two profiles use separate output folders, so either build leaves the other intact and can run in any order. `npm run package:store` validates the store profile and writes a manifest-root upload ZIP under `artifacts/`.
 
 The headed store test opens an isolated, disposable Chrome profile and asks you to approve website access, copy two synthetic fixture strings, and press the popup shortcut. It verifies actual optional permission grant, revocation, and recovery without refreshing the fixture. It does not use your regular Chrome profile; the copy checks replace the system clipboard with test text.
+
+In the development profile only, Clipboard+ imports queued companion captures in the background on startup and on a one-minute alarm, so new system-wide copies reach history even when the popup and Settings page are closed. Automatic syncs share one serialized queue with the popup and Settings triggers, so overlapping syncs import each capture once, never acknowledge a capture before its storage write succeeds, and retry on the next trigger after a failure. The store build compiles out the companion code and makes no native host calls.
 
 Each verified extension version updates the manifest, package metadata, README, changelog, and the public release notes together, then is committed, annotated with a matching tag, and pushed to `main`. The macOS companion version moves only when native code changes, because the companion ships separately from the Chrome Web Store package.
 
 ## macOS companion
 
-The companion is currently a developer preview and is not included or advertised as available in the v1.8.1 Chrome Web Store package. It remains part of the permanent free feature set and will return to the public interface after Apple signing, notarization, and consumer installation are complete.
+The companion is currently a developer preview and is not included or advertised as available in the v1.8.2 Chrome Web Store package. It remains part of the permanent free feature set and will return to the public interface after Apple signing, notarization, and consumer installation are complete.
 
 Install and start universal capture with:
 
@@ -103,4 +105,4 @@ Developer-account registration, two-step verification, trader classification, an
 
 ## Monetization boundary
 
-Everything included through v1.8.1 remains free. Bug fixes, security updates, privacy controls, accessibility, data ownership, and browser compatibility are not paid upgrades. A future Pro launch is gated on public demand and is planned around end-to-end encrypted cross-device sync, folders or sessions, encrypted backup and restore, and device management. The target launch price is $3.99 monthly or $29.99 yearly with a 14-day no-card trial; no billing or account code exists in v1.8.1.
+Everything included through v1.8.2 remains free. Bug fixes, security updates, privacy controls, accessibility, data ownership, and browser compatibility are not paid upgrades. A future Pro launch is gated on public demand and is planned around end-to-end encrypted cross-device sync, folders or sessions, encrypted backup and restore, and device management. The target launch price is $3.99 monthly or $29.99 yearly with a 14-day no-card trial; no billing or account code exists in v1.8.2.

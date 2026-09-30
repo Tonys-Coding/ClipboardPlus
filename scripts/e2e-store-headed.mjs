@@ -9,7 +9,7 @@ import { chromium } from '@playwright/test';
 import { assert, getServiceWorker, pollUntil } from './e2e-helpers.mjs';
 
 const profile = await mkdtemp(join(tmpdir(), 'clipboard-plus-headed-'));
-const extensionPath = resolve(import.meta.dirname, '..', 'dist');
+const extensionPath = resolve(import.meta.dirname, '..', 'dist-store');
 const firstText = 'Clipboard+ headed capture before revocation';
 const secondText = 'Clipboard+ headed capture after regrant';
 const server = createServer((_request, response) => {

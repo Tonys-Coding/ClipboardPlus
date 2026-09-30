@@ -5,7 +5,7 @@ import { join, resolve } from 'node:path';
 import { chromium } from '@playwright/test';
 import { addClip, assert, getServiceWorker, pollUntil, readClipboard } from './e2e-helpers.mjs';
 
-const extensionPath = resolve(import.meta.dirname, '..', 'dist');
+const extensionPath = resolve(import.meta.dirname, '..', 'dist-store');
 const profilePath = await mkdtemp(join(tmpdir(), 'clipboard-plus-store-e2e-'));
 const FIXTURE_TEXT = 'Captured without a refresh';
 
@@ -111,7 +111,7 @@ try {
   const aboutPage = await context.newPage();
   await aboutPage.goto(`chrome-extension://${extensionId}/options.html`);
   await aboutPage.getByText('About & help').waitFor({ state: 'attached' });
-  await aboutPage.getByRole('heading', { name: 'Clipboard+ 1.8.1' }).waitFor({ state: 'attached' });
+  await aboutPage.getByRole('heading', { name: 'Clipboard+ 1.8.2' }).waitFor({ state: 'attached' });
   const diagnostics = await aboutPage.locator('.diagnostics-preview').textContent();
   assert(diagnostics.includes('Website access granted: no'), 'Troubleshooting details must report missing website access.');
   for (const secret of ['Manual store-profile clip', '{{name|friend}}', fixtureOrigin]) {
