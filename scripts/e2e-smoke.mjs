@@ -110,7 +110,7 @@ try {
     await document.fonts.ready;
     return {
       family: getComputedStyle(document.body).fontFamily,
-      loaded: document.fonts.check('12px Satoshi'),
+      loaded: document.fonts.check('12px "Hanken Grotesk"'),
     };
   });
 
@@ -124,7 +124,7 @@ try {
   if (!contents.includes('Copied through the copy event')) throw new Error('The copy event was not persisted.');
   if (result.clips.find((clip) => clip.content.startsWith('const captured'))?.type !== 'code') throw new Error('Copied code was not classified as code.');
   if (contents.includes('Never store this password')) throw new Error('A password value was incorrectly persisted.');
-  if (!popupTypography.family.includes('Satoshi') || !popupTypography.loaded) throw new Error('The bundled Satoshi font was not applied.');
+  if (!popupTypography.family.includes('Hanken Grotesk') || !popupTypography.loaded) throw new Error('The bundled Hanken Grotesk font was not applied.');
   if (pageErrors.length) throw new Error(`Page errors: ${pageErrors.join('; ')}`);
 
   await extensionPage.evaluate(() => chrome.runtime.sendMessage({
@@ -191,12 +191,12 @@ try {
   await exclusiveFavorite.getByRole('button', { name: 'Clip actions' }).click();
   await extensionPage.getByRole('menuitem', { name: 'Add to favorites' }).click();
   await exclusiveFavorite.waitFor({ state: 'detached' });
-  await extensionPage.getByRole('button', { name: 'Favorites', exact: true }).click();
-  await extensionPage.getByText('Exclusive favorite fixture').waitFor();
+  await extensionPage.getByRole('button', { name: 'Saved', exact: true }).click();
+  await extensionPage.locator('.clip-content').filter({ hasText: 'Exclusive favorite fixture' }).waitFor();
   await extensionPage.getByRole('button', { name: 'Text', exact: true }).click();
-  assert(await extensionPage.getByText('Exclusive favorite fixture').count() === 0, 'A favorite leaked into the Text section.');
+  assert(await extensionPage.locator('.clip-content').filter({ hasText: 'Exclusive favorite fixture' }).count() === 0, 'A favorite leaked into the Text section.');
   await extensionPage.getByRole('button', { name: 'All', exact: true }).click();
-  assert(await extensionPage.getByText('Exclusive favorite fixture').count() === 0, 'A favorite leaked into the All section.');
+  assert(await extensionPage.locator('.clip-content').filter({ hasText: 'Exclusive favorite fixture' }).count() === 0, 'A favorite leaked into the All section.');
 
   const registeredShortcut = await worker.evaluate(async () => {
     const commands = await chrome.commands.getAll();
@@ -307,13 +307,13 @@ try {
   const previewDialog = extensionPage.locator('[role="dialog"][aria-labelledby="preview-heading"]');
   await previewDialog.waitFor({ state: 'attached' });
 
-  const previewText = await extensionPage.getByLabel('Clip content').textContent();
+  const previewText = await extensionPage.getByLabel('Clip content', { exact: true }).textContent();
   if (previewText !== longClip) throw new Error('The preview did not preserve the exact stored content.');
-  const previewWhiteSpace = await extensionPage.getByLabel('Clip content').evaluate((node) => getComputedStyle(node).whiteSpace);
+  const previewWhiteSpace = await extensionPage.getByLabel('Clip content', { exact: true }).evaluate((node) => getComputedStyle(node).whiteSpace);
   if (previewWhiteSpace !== 'pre-wrap') throw new Error(`Preview whitespace handling resolved to ${previewWhiteSpace}.`);
-  const prosePreviewFont = await extensionPage.getByLabel('Clip content').evaluate((node) => getComputedStyle(node).fontFamily);
-  if (!/Satoshi/.test(prosePreviewFont)) {
-    throw new Error(`A text preview must keep the Satoshi body font, received ${prosePreviewFont}.`);
+  const prosePreviewFont = await extensionPage.getByLabel('Clip content', { exact: true }).evaluate((node) => getComputedStyle(node).fontFamily);
+  if (!/Hanken Grotesk/.test(prosePreviewFont)) {
+    throw new Error(`A text preview must keep the popup body font, received ${prosePreviewFont}.`);
   }
   const previewFocused = await extensionPage.evaluate(() => Boolean(document.activeElement?.closest('[role="dialog"]')));
   if (!previewFocused) throw new Error('The preview dialog did not take initial focus.');
@@ -332,7 +332,7 @@ try {
   await codeRow.getByRole('button', { name: 'Clip actions' }).click();
   await extensionPage.getByRole('menuitem', { name: 'Preview' }).click();
   await previewDialog.waitFor({ state: 'attached' });
-  const codePreviewFont = await extensionPage.getByLabel('Clip content').evaluate((node) => getComputedStyle(node).fontFamily);
+  const codePreviewFont = await extensionPage.getByLabel('Clip content', { exact: true }).evaluate((node) => getComputedStyle(node).fontFamily);
   if (!/mono/i.test(codePreviewFont)) {
     throw new Error(`A code preview should use a monospace face, received ${codePreviewFont}.`);
   }
@@ -501,10 +501,10 @@ try {
   const aboutPage = await context.newPage();
   await aboutPage.goto(`chrome-extension://${extensionId}/options.html`);
   await aboutPage.getByText('About & help').waitFor({ state: 'attached' });
-  await aboutPage.getByRole('heading', { name: 'Clipboard+ 1.8.2' }).waitFor({ state: 'attached' });
+  await aboutPage.getByRole('heading', { name: 'Clipboard+ 1.8.3' }).waitFor({ state: 'attached' });
   await aboutPage.getByText(/to open Clipboard\+ and focus search/).waitFor({ state: 'attached' });
   const diagnostics = await aboutPage.locator('.diagnostics-preview').textContent();
-  if (!diagnostics.includes('Version: 1.8.2')) throw new Error('Troubleshooting details omitted the runtime version.');
+  if (!diagnostics.includes('Version: 1.8.3')) throw new Error('Troubleshooting details omitted the runtime version.');
   for (const secret of ['Copied with Command C', 'filtered.example', '127.0.0.1']) {
     if (diagnostics.includes(secret)) throw new Error(`Troubleshooting details leaked "${secret}".`);
   }
@@ -547,7 +547,7 @@ try {
     captureRecoveredOnOpenTab: true,
     externalRevocationEvidence,
     permissionRevocationProfile: 'store build (development build requires website access)',
-    aboutVersion: '1.8.2',
+    aboutVersion: '1.8.3',
     favoritesExclusiveToSaved: true,
     troubleshootingRedacted: true,
     screenshots: ['popup-preview.png', 'options-about.png'],

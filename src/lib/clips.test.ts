@@ -103,6 +103,11 @@ describe('clip behavior', () => {
     expect(state.settings).toMatchObject({ autoCapture: false, captureConsentVersion: 0 });
   });
 
+  it('defaults older settings to light and preserves a valid dark preference', () => {
+    expect(migrateState({ version: 2, clips: [], settings: { theme: 'unexpected' } }).settings.theme).toBe('light');
+    expect(migrateState({ version: 2, clips: [], settings: { theme: 'dark' } }).settings.theme).toBe('dark');
+  });
+
   it('preserves automatic capture after current affirmative consent', () => {
     const state = migrateState({
       version: 2,

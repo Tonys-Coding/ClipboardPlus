@@ -9,9 +9,11 @@ import { TypeGlyph } from './TypeGlyph';
 interface ClipCardProps {
   clip: Clip;
   copied: boolean;
+  selected: boolean;
   menuOpen: boolean;
   onMenuOpenChange: (open: boolean) => void;
   onCopy: (clip: Clip) => void;
+  onSelect: (clip: Clip) => void;
   onCopyOriginal: (clip: Clip) => void;
   onPreview: (clip: Clip) => void;
   onTransform: (clip: Clip) => void;
@@ -53,9 +55,11 @@ function clipRowLabel(clip: Clip): string {
 export function ClipCard({
   clip,
   copied,
+  selected,
   menuOpen,
   onMenuOpenChange,
   onCopy,
+  onSelect,
   onCopyOriginal,
   onPreview,
   onTransform,
@@ -120,8 +124,8 @@ export function ClipCard({
   };
 
   return (
-    <article className={`clip-card ${clip.type} ${copied ? 'is-copied' : ''} ${menuOpen ? 'menu-open' : ''}`}>
-      <button data-clip-row className="clip-copy" type="button" onClick={() => onCopy(clip)} aria-label={clipRowLabel(clip)}>
+    <article className={`clip-card ${clip.type} ${selected ? 'is-selected' : ''} ${copied ? 'is-copied' : ''} ${menuOpen ? 'menu-open' : ''}`}>
+      <button data-clip-row className="clip-copy" type="button" onFocus={() => onSelect(clip)} onClick={() => onCopy(clip)} aria-label={clipRowLabel(clip)} aria-current={selected ? 'true' : undefined}>
         <span className={`type-icon ${clip.type}`} title={`${clip.type[0].toUpperCase()}${clip.type.slice(1)} clip`}>
           <TypeGlyph type={clip.type} />
         </span>

@@ -245,6 +245,7 @@ function sanitizeSettings(current: Settings, changes: Partial<Settings>): Settin
       ? changes.capturePausedUntil
       : current.capturePausedUntil;
   return {
+    theme: changes.theme === 'light' || changes.theme === 'dark' ? changes.theme : current.theme,
     autoCapture: typeof changes.autoCapture === 'boolean' ? changes.autoCapture : current.autoCapture,
     historyLimit,
     retentionDays,

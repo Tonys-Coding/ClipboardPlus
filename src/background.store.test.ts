@@ -55,7 +55,7 @@ beforeEach(async () => {
     runtime: {
       id: EXTENSION_ID,
       lastError: undefined,
-      getManifest: vi.fn(() => ({ version: '1.8.2' })),
+      getManifest: vi.fn(() => ({ version: '1.8.3' })),
       onInstalled: { addListener: vi.fn() },
       onStartup: {
         addListener: vi.fn((listener: () => void) => {

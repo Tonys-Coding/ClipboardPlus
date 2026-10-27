@@ -1,12 +1,11 @@
-import { FormEvent, useCallback, useEffect, useState } from 'react';
-import { CheckIcon, ClipboardIcon, PlusIcon, TrashIcon, XIcon } from '../components/Icons';
+import { FormEvent, useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import { Check, Code2, Copy, FileText, Link2, Plus, Trash2, X } from 'lucide-react';
 import { CAPTURE_CONSENT_VERSION, STORAGE_KEY, captureIsPaused, normalizeHostname } from '../lib/clips';
 import { COMPANION_ENABLED } from '../lib/build';
 import { buildTroubleshootingReport } from '../lib/diagnostics';
 import { hasCurrentCaptureConsent, hasWebsiteAccess, removeWebsiteAccess, requestWebsiteAccess } from '../lib/capturePermissions';
 import { sendMessage } from '../lib/runtime';
 import type { ClipType, RetentionDays, Settings, StorageState } from '../lib/types';
-import { TypeGlyph } from '../popup/TypeGlyph';
 import './options.css';
 
 const CAPTURE_TYPE_OPTIONS: Array<{ type: ClipType; label: string; detail: string }> = [
@@ -95,6 +94,10 @@ export function Options() {
   const [diagnosticsMessage, setDiagnosticsMessage] = useState('');
   const buildProfile = COMPANION_ENABLED ? 'development' : 'store';
 
+  useLayoutEffect(() => {
+    if (state) document.documentElement.dataset.theme = state.settings.theme === 'dark' ? 'dark' : 'light';
+  }, [state]);
+
   const collectStatus = useCallback(async (): Promise<AboutStatus> => {
     let currentState: StorageState | null = null;
     let stateError = '';
@@ -150,24 +153,6 @@ export function Options() {
       applyStatus(await collectStatus());
     })();
   }, [applyStatus, collectStatus]);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)');
-
-    const moveSpotlight = (event: PointerEvent) => {
-      if (reducedMotion?.matches || event.pointerType === 'touch') return;
-      root.style.setProperty('--spotlight-x', `${event.clientX}px`);
-      root.style.setProperty('--spotlight-y', `${Math.max(170, Math.min(event.clientY, window.innerHeight - 90))}px`);
-    };
-
-    window.addEventListener('pointermove', moveSpotlight, { passive: true });
-    return () => {
-      window.removeEventListener('pointermove', moveSpotlight);
-      root.style.removeProperty('--spotlight-x');
-      root.style.removeProperty('--spotlight-y');
-    };
-  }, []);
 
   useEffect(() => {
     const refreshLive = () => {
@@ -354,11 +339,6 @@ export function Options() {
 
   return (
     <main className="options-shell">
-      <div className="spotlight-stage" aria-hidden="true">
-        <span className="spotlight-fixture" />
-        <span className="spotlight-beam" />
-        <span className="spotlight-pool" />
-      </div>
       <aside className="floating-clipboards floating-left" aria-hidden="true">
         <img className="floating-clipboard clipboard-one" src="/assets/clipboard-plus-single.png" alt="" />
         <img className="floating-clipboard clipboard-two" src="/assets/clipboard-plus-single.png" alt="" />
@@ -376,10 +356,10 @@ export function Options() {
       <header className="options-header">
         <img className="options-logo" src="/icons/clipboard-plus-logo.png" alt="Clipboard+ logo" />
         <div><h1>Capture controls</h1><p>Choose what Clipboard+ collects and keeps on this device.</p></div>
-        {saved && <span className="saved-badge"><CheckIcon /> Saved</span>}
+        {saved && <span className="saved-badge"><Check aria-hidden="true" /> Saved</span>}
       </header>
 
-      {error && <div className="error-banner">{error}<button type="button" onClick={() => setError('')}><XIcon /></button></div>}
+      {error && <div className="error-banner">{error}<button type="button" aria-label="Dismiss error" onClick={() => setError('')}><X aria-hidden="true" /></button></div>}
 
       {state.settings.captureConsentVersion < CAPTURE_CONSENT_VERSION && (
         <section className="settings-card consent-card" aria-labelledby="capture-consent-heading">
@@ -425,6 +405,13 @@ export function Options() {
             <option value={0}>Keep indefinitely</option><option value={1}>After 24 hours</option><option value={7}>After 7 days</option><option value={30}>After 30 days</option><option value={90}>After 90 days</option>
           </select>
         </div>
+        <div className="divider" />
+        <div className="setting-row">
+          <div><h2>Appearance</h2><p>Choose the look of Clipboard+ in Chrome.</p></div>
+          <select value={state.settings.theme} onChange={(event) => void update({ theme: event.target.value as Settings['theme'] })} aria-label="Appearance">
+            <option value="light">Light</option><option value="dark">Dark</option>
+          </select>
+        </div>
       </section>
 
       <section className={`settings-card pause-card ${captureIsPaused(state.settings) ? 'is-paused' : ''}`}>
@@ -446,7 +433,8 @@ export function Options() {
         <div className="capture-type-grid">
           {CAPTURE_TYPE_OPTIONS.map(({ type, label, detail }) => {
             const checked = state.settings.captureTypes.includes(type);
-            return <label className={`capture-type-option ${checked ? 'selected' : ''}`} key={type}><input type="checkbox" checked={checked} disabled={checked && state.settings.captureTypes.length === 1} onChange={() => void toggleCaptureType(type)} /><TypeGlyph type={type} /><span><strong>{label}</strong><small>{detail}</small></span></label>;
+            const Icon = type === 'text' ? FileText : type === 'url' ? Link2 : Code2;
+            return <label className={`capture-type-option ${checked ? 'selected' : ''}`} key={type}><input type="checkbox" checked={checked} disabled={checked && state.settings.captureTypes.length === 1} onChange={() => void toggleCaptureType(type)} /><Icon className="capture-type-icon" aria-hidden="true" strokeWidth={1.8} /><span><strong>{label}</strong><small>{detail}</small></span></label>;
           })}
         </div>
         <div className="divider" />
@@ -460,9 +448,9 @@ export function Options() {
 
       <section className="settings-card site-card">
         <div className="card-heading"><div><h2>Excluded sites</h2><p>Clipboard+ will ignore copies made on these domains and their subdomains.</p></div></div>
-        <form className="site-form" onSubmit={addSite}><input value={site} onChange={(event) => setSite(event.target.value)} placeholder="example.com" aria-label="Site to exclude" /><button type="submit" disabled={!site.trim()}><PlusIcon /> Add site</button></form>
+        <form className="site-form" onSubmit={addSite}><input value={site} onChange={(event) => setSite(event.target.value)} placeholder="example.com" aria-label="Site to exclude" /><button type="submit" disabled={!site.trim()}><Plus aria-hidden="true" /> Add site</button></form>
         {state.settings.excludedSites.length ? (
-          <ul className="site-list">{state.settings.excludedSites.map((hostname) => <li key={hostname}><span>{hostname}</span><button type="button" aria-label={`Remove ${hostname}`} onClick={() => void update({ excludedSites: state.settings.excludedSites.filter((item) => item !== hostname) })}><XIcon /></button></li>)}</ul>
+          <ul className="site-list">{state.settings.excludedSites.map((hostname) => <li key={hostname}><span>{hostname}</span><button type="button" aria-label={`Remove ${hostname}`} onClick={() => void update({ excludedSites: state.settings.excludedSites.filter((item) => item !== hostname) })}><X aria-hidden="true" /></button></li>)}</ul>
         ) : <div className="no-sites">No sites are excluded.</div>}
       </section>
 
@@ -484,7 +472,7 @@ export function Options() {
           <div><strong>{formatBytes(new TextEncoder().encode(JSON.stringify(state)).length)}</strong><span>Approx. usage</span></div>
         </div>
         <p className="oldest-clip">{state.clips.length ? `Oldest saved clip: ${new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).format(Math.min(...state.clips.map((clip) => clip.createdAt)))}` : 'No clips are currently stored.'}</p>
-        <div className="danger-actions"><button type="button" onClick={() => void clear(false)}><TrashIcon /> Clear history</button><button className="danger" type="button" onClick={() => void clear(true)}><TrashIcon /> Clear all data</button></div>
+        <div className="danger-actions"><button type="button" onClick={() => void clear(false)}><Trash2 aria-hidden="true" /> Clear history</button><button className="danger" type="button" onClick={() => void clear(true)}><Trash2 aria-hidden="true" /> Clear all data</button></div>
       </section>
 
       <section className="settings-card about-card" aria-labelledby="about-heading">
@@ -527,8 +515,8 @@ export function Options() {
           })}</pre>
           <small>It never includes clip contents, clip counts, page titles or addresses, excluded domains, identifiers, or raw errors. These details are only copied to your clipboard and are never sent anywhere by Clipboard+.</small>
           <div className="diagnostics-actions">
-            <button type="button" className="about-action" onClick={() => void copyTroubleshooting()} disabled={diagnosticsFeedback === 'checking'}><ClipboardIcon /> Copy troubleshooting details</button>
-            {diagnosticsFeedback === 'copied' && <span className="diagnostics-feedback"><CheckIcon /> Copied to clipboard</span>}
+            <button type="button" className="about-action" onClick={() => void copyTroubleshooting()} disabled={diagnosticsFeedback === 'checking'}><Copy aria-hidden="true" /> Copy troubleshooting details</button>
+            {diagnosticsFeedback === 'copied' && <span className="diagnostics-feedback"><Check aria-hidden="true" /> Copied to clipboard</span>}
             {diagnosticsFeedback === 'error' && <span className="diagnostics-feedback error">{diagnosticsMessage}</span>}
           </div>
           <p className="sr-only" role="status" aria-live="polite">{diagnosticsMessage}</p>

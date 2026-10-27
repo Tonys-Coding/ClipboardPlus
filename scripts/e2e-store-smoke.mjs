@@ -21,6 +21,49 @@ let context;
 
 const storedState = (page) => page.evaluate(async () => (await chrome.storage.local.get('clipboardPlus')).clipboardPlus);
 
+async function readActionPopupSize(context, worker, anchorPage) {
+  await worker.evaluate(() => chrome.action.openPopup());
+  const session = await context.newCDPSession(anchorPage);
+  try {
+    const target = await pollUntil(async () => {
+      const { targetInfos } = await session.send('Target.getTargets');
+      return targetInfos.find((info) => info.url.endsWith('/popup.html'));
+    }, { description: 'the actual Chrome action popup target' });
+    const { sessionId } = await session.send('Target.attachToTarget', { targetId: target.targetId, flatten: false });
+    try {
+      const response = await new Promise((resolveResponse, reject) => {
+        const timer = setTimeout(() => reject(new Error('Timed out measuring the action popup.')), 3_000);
+        const onMessage = (event) => {
+          if (event.sessionId !== sessionId) return;
+          const message = JSON.parse(event.message);
+          if (message.id !== 1) return;
+          clearTimeout(timer);
+          session.off('Target.receivedMessageFromTarget', onMessage);
+          resolveResponse(message);
+        };
+        session.on('Target.receivedMessageFromTarget', onMessage);
+        session.send('Target.sendMessageToTarget', {
+          sessionId,
+          message: JSON.stringify({
+            id: 1,
+            method: 'Runtime.evaluate',
+            params: {
+              expression: '({ viewport: innerWidth, shell: document.querySelector(".popup-shell")?.getBoundingClientRect().width ?? 0 })',
+              returnByValue: true,
+            },
+          }),
+        }).catch(reject);
+      });
+      if (response.error) throw new Error(`Could not measure the action popup: ${JSON.stringify(response.error)}`);
+      return response.result.result.value;
+    } finally {
+      await session.send('Target.detachFromTarget', { sessionId });
+    }
+  } finally {
+    await session.detach();
+  }
+}
+
 try {
   context = await chromium.launchPersistentContext(profilePath, {
     channel: 'chromium',
@@ -38,6 +81,9 @@ try {
   const options = await context.newPage();
   await options.goto(`chrome-extension://${extensionId}/options.html`);
   await options.getByText('Enable automatic website capture?').waitFor();
+  const actionPopupSize = await readActionPopupSize(context, worker, options);
+  assert(actionPopupSize.viewport >= 700 && actionPopupSize.shell >= 700,
+    `Chrome opened a collapsed action popup: ${JSON.stringify(actionPopupSize)}`);
 
   // --- A fresh store install must not have any capture access before consent ---
   const initial = await options.evaluate(async () => ({
@@ -50,6 +96,7 @@ try {
   assert(initial.state.settings.retentionDays === 0, 'Fresh store installs must keep clips indefinitely by default.');
   assert(initial.state.settings.captureTypes.join(',') === 'text,url,code', 'Fresh store installs must enable every capture category.');
   assert(initial.state.settings.capturePaused === false, 'Fresh store installs must not begin paused.');
+  assert(initial.state.settings.theme === 'light', 'Fresh store installs must begin in light mode.');
   assert(!initial.allowed.origins?.length, 'Fresh store installs must not have website access.');
   assert(initial.registrations.length === 0, 'Fresh store installs must not register a content script.');
   assert(!initial.manifest.permissions?.includes('nativeMessaging'), 'The store manifest includes Native Messaging.');
@@ -60,6 +107,33 @@ try {
   const popup = await context.newPage();
   await popup.goto(`chrome-extension://${extensionId}/popup.html`);
   await popup.getByRole('button', { name: /add clip/i }).waitFor();
+
+  // Chrome measures an action popup from a tiny initial viewport. Its document
+  // must provide an intrinsic width instead of collapsing to that viewport.
+  await popup.setViewportSize({ width: 60, height: 600 });
+  const intrinsicPopupWidth = await popup.locator('.popup-shell').evaluate((node) => node.getBoundingClientRect().width);
+  assert(intrinsicPopupWidth >= 700, `The action popup collapsed to a ${intrinsicPopupWidth}px strip.`);
+  await popup.setViewportSize({ width: 760, height: 600 });
+  const frame = await popup.locator('.popup-shell').evaluate((node) => {
+    const style = getComputedStyle(node);
+    return { radius: parseFloat(style.borderTopLeftRadius), border: style.borderTopWidth, background: style.backgroundColor };
+  });
+  assert(frame.radius >= 12 && frame.border === '1px', `The popup frame is not rounded and bordered: ${JSON.stringify(frame)}`);
+  await popup.getByRole('button', { name: 'Dark mode' }).click();
+  await popup.getByRole('button', { name: 'Dark mode', pressed: true }).waitFor();
+  const darkSurface = await popup.locator('.popup-shell').evaluate((node) => getComputedStyle(node).backgroundColor);
+  assert(darkSurface !== frame.background, 'The popup did not change its background in dark mode.');
+  await popup.reload();
+  await popup.getByRole('button', { name: 'Dark mode', pressed: true }).waitFor();
+  await popup.getByRole('button', { name: 'Dark mode' }).click();
+  await popup.getByRole('button', { name: 'Dark mode', pressed: false }).waitFor();
+  assert((await storedState(popup)).settings.theme === 'light', 'The theme switch did not restore light mode.');
+  await options.getByRole('combobox', { name: 'Appearance' }).selectOption('dark');
+  await options.waitForFunction(() => document.documentElement.dataset.theme === 'dark');
+  await popup.getByRole('button', { name: 'Dark mode', pressed: true }).waitFor();
+  await options.getByRole('combobox', { name: 'Appearance' }).selectOption('light');
+  await options.waitForFunction(() => document.documentElement.dataset.theme === 'light');
+  await popup.getByRole('button', { name: 'Dark mode', pressed: false }).waitFor();
 
   // --- Every free popup flow works with no website access at all ---
   await addClip(popup, 'Manual store-profile clip');
@@ -78,12 +152,12 @@ try {
   const manualRow = popup.locator('article').filter({ hasText: 'Manual store-profile clip' }).first();
   await manualRow.getByRole('button', { name: 'Clip actions' }).click();
   await popup.getByRole('menuitem', { name: 'Preview' }).click();
-  const previewBody = popup.getByLabel('Clip content');
+  const previewBody = popup.getByLabel('Clip content', { exact: true });
   await previewBody.waitFor({ state: 'attached' });
   const previewText = await previewBody.textContent();
   assert(previewText === 'Manual store-profile clip', `Preview must show the exact stored text, received ${JSON.stringify(previewText)}.`);
   const previewFont = await previewBody.evaluate((node) => getComputedStyle(node).fontFamily);
-  assert(/Satoshi/.test(previewFont), `Text previews must keep the body font, received ${previewFont}.`);
+  assert(/Hanken Grotesk/.test(previewFont), `Text previews must keep the popup font, received ${previewFont}.`);
   await popup.keyboard.press('Escape');
   await popup.waitForFunction(() => !document.querySelector('[role="dialog"]'));
 
@@ -111,7 +185,7 @@ try {
   const aboutPage = await context.newPage();
   await aboutPage.goto(`chrome-extension://${extensionId}/options.html`);
   await aboutPage.getByText('About & help').waitFor({ state: 'attached' });
-  await aboutPage.getByRole('heading', { name: 'Clipboard+ 1.8.2' }).waitFor({ state: 'attached' });
+  await aboutPage.getByRole('heading', { name: 'Clipboard+ 1.8.3' }).waitFor({ state: 'attached' });
   const diagnostics = await aboutPage.locator('.diagnostics-preview').textContent();
   assert(diagnostics.includes('Website access granted: no'), 'Troubleshooting details must report missing website access.');
   for (const secret of ['Manual store-profile clip', '{{name|friend}}', fixtureOrigin]) {
@@ -190,6 +264,8 @@ try {
     manualClipFlows: true,
     undoRestoredRecord: true,
     previewTypography: previewFont,
+    actionPopupSize,
+    intrinsicPopupWidth,
     troubleshootingRedacted: true,
     capturedWithoutAccess: false,
     popupCaptureNotice: popupNotice,

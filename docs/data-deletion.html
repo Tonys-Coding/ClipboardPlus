@@ -1,12 +1,16 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Delete your data · Clipboard+</title><link rel="stylesheet" href="assets/site.css"></head>
-<body><main>
-  <nav><img src="assets/clipboard-plus-logo.png" alt=""><strong>Clipboard+</strong><a href="index.html">Home</a><a href="privacy.html">Privacy</a></nav>
-  <h1>Delete your data</h1><p class="lede">Clipboard+ v1.7 stores its Chrome history only on your device, so no account request is necessary.</p>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Delete your data · Clipboard+</title><script src="assets/site.js"></script><link rel="stylesheet" href="assets/site.css"></head>
+<body><header class="site-header"><nav class="site-nav" aria-label="Main navigation">
+  <a class="site-brand" href="index.html" aria-label="Clipboard+ home"><img src="assets/clipboard-plus-logo.png" alt=""><span>Clipboard<b>+</b></span></a>
+  <div class="site-links"><a href="release-notes.html">Release notes</a><a href="privacy.html">Privacy</a><a href="support.html">Support</a></div>
+  <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark mode"><svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.8A8.5 8.5 0 0 1 8.2 3.8 8.5 8.5 0 1 0 20.2 15.8Z"/></svg><svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
+</nav></header><main class="reading-main">
+  <h1>Delete your data</h1><p class="lede">Clipboard+ stores Chrome history on your device, so no account request is necessary.</p>
   <h2>Use automatic cleanup</h2><p>Open Clipboard+ Settings and choose a retention period. Expired non-favorite clips are removed locally; favorites never expire automatically.</p>
   <h2>Clear recent history</h2><p>Open Clipboard+ Settings and select <strong>Clear history</strong>. Non-favorite clips are deleted; favorites remain.</p>
   <h2>Clear everything</h2><p>Open Clipboard+ Settings, select <strong>Clear all data</strong>, and confirm. All clips and favorites are deleted from extension storage.</p>
   <h2>Remove website access</h2><p>Turn Automatic web capture off in Clipboard+ Settings. The extension removes its optional access to ordinary websites.</p>
   <h2>Remove the extension</h2><p>Open <code>chrome://extensions</code>, find Clipboard+, and select Remove. Chrome deletes the extension's local storage as part of removal.</p>
-  <footer><a href="support.html">Contact support</a> if these controls do not work as described.</footer>
-</main></body></html>
+  <h2>Clear the website appearance choice</h2><p>The public website remembers only its light/dark choice in browser local storage. Clear site data for <code>tonys-coding.github.io</code> in your browser to remove that preference; this does not change the extension's saved clips.</p>
+  <div class="page-note"><p><a href="support.html">Contact support</a> if these controls do not work as described.</p></div>
+</main><footer class="site-footer"><p>Clipboard+ · Tonys-Coding</p><div><a href="privacy.html">Privacy</a><a href="support.html">Support</a></div></footer></body></html>

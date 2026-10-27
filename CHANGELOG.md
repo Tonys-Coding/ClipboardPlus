@@ -2,6 +2,17 @@
 
 Clipboard+'s Git history was reconstructed from local development milestones after versions 1.0.0 through 1.4.2 had already been built. Those tags preserve the rollout order; their publication timestamps are intentionally not backdated. Releases from 1.5.0 onward follow the live project history.
 
+## 1.8.3
+
+- Carry the Workspace palette, Hanken typography, rounded surfaces, and a light-default/dark-toggle appearance across Capture Controls and the public home, privacy, support, data-deletion, and release-notes pages.
+- Refresh the public homepage with an accurate Workspace preview in both appearances and keep its theme preference browser-local, separate from the extension's storage.
+- Add a clean rounded popup frame and locally saved light/dark appearance controls in the popup and Capture Controls page.
+- Redesign the Chrome popup around a compact Workspace: separate navigation, recent results, and a full-content detail pane, while preserving one-click row copying and keeping favorites in Saved.
+- Use the official logo with locally bundled Hanken Grotesk in the popup, Capture Controls, and public website; the macOS companion retains Satoshi.
+- Refresh Chrome Web Store screenshots and promotional graphics to match the redesigned popup.
+- Fix Chrome's action popup collapsing into a narrow strip while measuring its initial viewport, with a regression check against the actual popup surface.
+- Remove the pointer-following spotlight from Capture Controls and replace its category and action symbols with a consistent Lucide line-icon set, retaining the official logo and side artwork.
+
 ## 1.8.2
 
 - Build the Chrome Web Store profile into `dist-store` so running the store build or its validation, packaging, asset, and end-to-end scripts never overwrites the development `dist` folder that is loaded as the unpacked extension. The two profiles can be built in any order and each keeps its own manifest, so the development build retains Native Messaging while the store build excludes it.

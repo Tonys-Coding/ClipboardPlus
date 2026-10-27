@@ -20,6 +20,7 @@ npm run lint
 npm test
 npm run test:e2e
 npm run test:e2e:store
+npm run test:site
 npm run test:e2e:store:headed
 npm run test:native
 npm run package:store
@@ -35,7 +36,7 @@ Each verified extension version updates the manifest, package metadata, README, 
 
 ## macOS companion
 
-The companion is currently a developer preview and is not included or advertised as available in the v1.8.2 Chrome Web Store package. It remains part of the permanent free feature set and will return to the public interface after Apple signing, notarization, and consumer installation are complete.
+The companion is currently a developer preview and is not included or advertised as available in the v1.8.3 Chrome Web Store package. It remains part of the permanent free feature set and will return to the public interface after Apple signing, notarization, and consumer installation are complete.
 
 Install and start universal capture with:
 
@@ -53,7 +54,7 @@ Use the `C+` menu to pause or resume system-wide capture. To remove the companio
 
 Press **Control-Shift-V** from any application to open the native Quick Paste palette. Start typing to search clip content, titles, source applications, and URLs; use the arrow keys to select a result, then press **Return** to paste it into the application you were using. Press **Command-Return** to copy the result without automatically pasting, **Option-Return** to choose a paste transformation, or **Escape** to close the palette. Selecting a smart snippet opens its fill-in fields before Clipboard+ pastes it.
 
-Every result shows the copied content as the large primary line. When available, its source website, category, and source application appear below it, so page titles never compete with the value that will actually be pasted. The Chrome popup and native palette share the official logo, bundled Satoshi variable font, compact spacing, and flat result-row treatment. Satoshi is supplied by Indian Type Foundry through Fontshare under the included ITF Free Font License.
+Every result shows the copied content as the large primary line. When available, its source website, category, and source application appear below it, so page titles never compete with the value that will actually be pasted. The Chrome popup uses a Workspace layout with separate navigation, recent results, and a full-content preview; clicking a result still copies it immediately. Saved clips stay out of All and the type-filtered history. Its rounded frame can be shown in light or dark mode using the popup switch or Appearance in Capture Controls; the Chrome preference stays on the device and now applies to both extension pages. The public website uses the same light-default/dark-toggle palette with its own browser-local preference. The popup, Capture Controls, and website bundle Hanken Grotesk under the SIL Open Font License 1.1. Capture Controls uses Lucide line icons, with its license included in the extension package. The separate native palette retains the bundled Satoshi font, supplied by Indian Type Foundry through Fontshare under the included ITF Free Font License.
 
 The first automatic paste asks for Clipboard+ Companion under **System Settings → Privacy & Security → Accessibility**. If permission is declined, Clipboard+ still copies the selected clip so it can be pasted normally. Quick Paste locally mirrors up to 500 clips from Chrome, prioritizing favorites, and also includes new system-wide captures immediately.
 
@@ -69,7 +70,7 @@ Upgrading from 1.5.0 or 1.5.1 resets the old build-specific Accessibility entry 
 - Without the companion, Chrome internal pages, the Chrome Web Store, browser UI, and desktop applications cannot be captured. The companion sees the resulting system clipboard instead and covers most of those gaps.
 - Incognito access is disabled in the manifest.
 
-The public [privacy policy](https://tonys-coding.github.io/ClipboardPlus/privacy.html), [support page](https://tonys-coding.github.io/ClipboardPlus/support.html), and [data-deletion instructions](https://tonys-coding.github.io/ClipboardPlus/data-deletion.html) are maintained from `docs/`.
+The public [privacy policy](https://tonys-coding.github.io/ClipboardPlus/privacy.html), [support page](https://tonys-coding.github.io/ClipboardPlus/support.html), and [data-deletion instructions](https://tonys-coding.github.io/ClipboardPlus/data-deletion.html) are maintained from `docs/`. `npm run assets:store` refreshes the five store screenshots, two promo tiles, and Workspace and Capture Controls previews used by the homepage. `npm run test:site` checks the five public pages at desktop and mobile sizes.
 
 ## Using the extension
 
@@ -105,4 +106,4 @@ Developer-account registration, two-step verification, trader classification, an
 
 ## Monetization boundary
 
-Everything included through v1.8.2 remains free. Bug fixes, security updates, privacy controls, accessibility, data ownership, and browser compatibility are not paid upgrades. A future Pro launch is gated on public demand and is planned around end-to-end encrypted cross-device sync, folders or sessions, encrypted backup and restore, and device management. The target launch price is $3.99 monthly or $29.99 yearly with a 14-day no-card trial; no billing or account code exists in v1.8.2.
+Everything included through v1.8.3 remains free. Bug fixes, security updates, privacy controls, accessibility, data ownership, and browser compatibility are not paid upgrades. A future Pro launch is gated on public demand and is planned around end-to-end encrypted cross-device sync, folders or sessions, encrypted backup and restore, and device management. The target launch price is $3.99 monthly or $29.99 yearly with a 14-day no-card trial; no billing or account code exists in v1.8.3.

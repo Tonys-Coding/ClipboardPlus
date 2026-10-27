@@ -14,6 +14,7 @@ export interface Clip {
 }
 
 export interface Settings {
+  theme: 'light' | 'dark';
   autoCapture: boolean;
   historyLimit: number;
   retentionDays: RetentionDays;

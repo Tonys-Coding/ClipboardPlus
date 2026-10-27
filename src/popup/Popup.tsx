@@ -1,6 +1,6 @@
 import { FormEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { CheckIcon, ClipboardIcon, LinkIcon, PauseIcon, PlayIcon, PlusIcon, SearchIcon, SettingsIcon, StarIcon, TrashIcon, XIcon } from '../components/Icons';
+import { CheckIcon, ClipboardIcon, CopyOriginalIcon, EyeIcon, LinkIcon, MoonIcon, PauseIcon, PlayIcon, PlusIcon, SearchIcon, SettingsIcon, StarIcon, SunIcon, TrashIcon, WandIcon, XIcon } from '../components/Icons';
 import { captureIsPaused, filterClips, STORAGE_KEY } from '../lib/clips';
 import { COMPANION_ENABLED } from '../lib/build';
 import { isRestrictedPage, resolveCaptureStatus, type CaptureStatus, type ListenerHealth } from '../lib/captureStatus';
@@ -21,6 +21,19 @@ type LoadStatus = 'loading' | 'ready' | 'error';
 
 const CAPTURE_CHECK_TIMEOUT_MS = 4_000;
 const INITIAL_LOAD_TIMEOUT_MS = 4_000;
+
+function sourceHost(sourceUrl: string | undefined): string | null {
+  if (!sourceUrl) return null;
+  try {
+    return new URL(sourceUrl).hostname.replace(/^www\./, '');
+  } catch {
+    return null;
+  }
+}
+
+function clipDate(timestamp: number): string {
+  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(timestamp);
+}
 
 async function probeCaptureListener(tabId: number | undefined, reinject: boolean): Promise<ListenerHealth> {
   if (!tabId) return 'unavailable';
@@ -74,6 +87,7 @@ export function Popup() {
   const [undoOffer, setUndoOffer] = useState<UndoOffer | null>(null);
   const [announcement, setAnnouncement] = useState('');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [previewing, setPreviewing] = useState<Clip | null>(null);
   const [loadStatus, setLoadStatus] = useState<LoadStatus>('loading');
   const [loadError, setLoadError] = useState('');
@@ -102,6 +116,11 @@ export function Popup() {
         state.settings.excludedSites,
       ])
     : '';
+  const darkMode = state?.settings.theme === 'dark';
+
+  useLayoutEffect(() => {
+    if (state) document.documentElement.dataset.theme = darkMode ? 'dark' : 'light';
+  }, [darkMode, state]);
 
   const dialogOpen = Boolean(editing || snippetRequest || transforming || previewing);
 
@@ -355,6 +374,8 @@ export function Popup() {
   }, [state?.clips]);
   const favorites = visible.filter((clip) => clip.favorite);
   const history = visible.filter((clip) => !clip.favorite);
+  const selectedClip = visible.find((clip) => clip.id === selectedId) ?? visible[0] ?? null;
+  const viewTitle = { all: 'Recent', favorite: 'Saved', text: 'Text', url: 'Links', code: 'Code' }[filter];
   const capturePaused = state ? captureIsPaused(state.settings) : false;
 
   const copyText = async (content: string, clip: Clip, successMessage?: string): Promise<boolean> => {
@@ -372,6 +393,7 @@ export function Popup() {
   };
 
   const handleCopy = (clip: Clip) => {
+    setSelectedId(clip.id);
     if (hasSnippetFields(clip.content)) {
       setSnippetRequest({ clip, template: clip.content });
       return;
@@ -478,23 +500,25 @@ export function Popup() {
     if (applied) retryCaptureCheck();
   };
 
-  const renderSection = (title: string, clips: Clip[], favorite = false) => {
+  const toggleTheme = async () => {
+    if (!state) return;
+    await perform({ type: 'UPDATE_SETTINGS', payload: { theme: darkMode ? 'light' : 'dark' } });
+  };
+
+  const renderClips = (clips: Clip[]) => {
     if (!clips.length) return null;
     return (
-      <section className="clip-section">
-        <div className="section-heading">
-          <span>{favorite && <span className="heading-star">★</span>}{title}</span>
-          <span>{clips.length}</span>
-        </div>
-        <div className="clip-list">
+      <div className="clip-list">
           {clips.map((clip) => (
             <ClipCard
               key={clip.id}
               clip={clip}
               copied={copiedId === clip.id}
+              selected={selectedClip?.id === clip.id}
               menuOpen={openMenuId === clip.id}
               onMenuOpenChange={(open) => handleMenuOpenChange(clip.id, open)}
               onCopy={handleCopy}
+              onSelect={(item) => setSelectedId(item.id)}
               onCopyOriginal={handleCopyOriginal}
               onPreview={handlePreview}
               onTransform={setTransforming}
@@ -503,8 +527,7 @@ export function Popup() {
               onDelete={(item) => void handleDelete(item)}
             />
           ))}
-        </div>
-      </section>
+      </div>
     );
   };
 
@@ -516,23 +539,18 @@ export function Popup() {
           <img className="brand-mark" src="/icons/clipboard-plus-logo.png" alt="" />
           <span>Clipboard<strong>+</strong></span>
         </div>
-        <div className="header-actions">
-          {state?.settings.autoCapture && <button className={`icon-button privacy-button ${capturePaused ? 'active' : ''}`} type="button" aria-label={capturePaused ? 'Resume automatic web capture' : 'Pause automatic web capture for one hour'} onClick={() => void toggleQuickPause()}>{capturePaused ? <PlayIcon /> : <PauseIcon />}</button>}
-          <button className="icon-button" type="button" aria-label="Open settings" onClick={() => void chrome.runtime.openOptionsPage()}><SettingsIcon /></button>
-        </div>
-      </header>
-
-      <div className="command-row">
         <label className="search-box">
           <SearchIcon />
           <input ref={searchInput} value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={handleSearchKeyDown} placeholder="Find a clip…" aria-label="Search clips" />
           {query && <button type="button" aria-label="Clear search" onClick={() => setQuery('')}><XIcon /></button>}
         </label>
-        <div className="quick-actions">
+        <div className="header-actions">
           <button type="button" className={`action-button ${addOpen ? 'active' : ''}`} onClick={() => setAddOpen((open) => !open)}><PlusIcon /> Add clip</button>
-          <button type="button" className="action-button" onClick={() => void saveTab()}><LinkIcon /> Save tab</button>
+          {state?.settings.autoCapture && <button className={`icon-button privacy-button ${capturePaused ? 'active' : ''}`} type="button" aria-label={capturePaused ? 'Resume automatic web capture' : 'Pause automatic web capture for one hour'} onClick={() => void toggleQuickPause()}>{capturePaused ? <PlayIcon /> : <PauseIcon />}</button>}
+          <button className="icon-button theme-button" type="button" aria-label="Dark mode" aria-pressed={darkMode} title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'} disabled={!state} onClick={() => void toggleTheme()}>{darkMode ? <SunIcon /> : <MoonIcon />}</button>
+          <button className="icon-button" type="button" aria-label="Open settings" onClick={() => void chrome.runtime.openOptionsPage()}><SettingsIcon /></button>
         </div>
-      </div>
+      </header>
 
       {addOpen && (
         <form className="add-panel" onSubmit={handleAdd}>
@@ -542,23 +560,35 @@ export function Popup() {
         </form>
       )}
 
-      <div className="filter-bar" role="group" aria-label="Filter clips">
-        <button type="button" aria-label="All" aria-pressed={filter === 'all'} className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}><span>All</span><b>{counts.all}</b></button>
-        <button type="button" aria-label="Text" aria-pressed={filter === 'text'} className={filter === 'text' ? 'active' : ''} onClick={() => setFilter('text')}><TypeGlyph type="text" /><span>Text</span><b>{counts.text}</b></button>
-        <button type="button" aria-label="Links" aria-pressed={filter === 'url'} className={filter === 'url' ? 'active' : ''} onClick={() => setFilter('url')}><TypeGlyph type="url" /><span>Links</span><b>{counts.url}</b></button>
-        <button type="button" aria-label="Code" aria-pressed={filter === 'code'} className={filter === 'code' ? 'active' : ''} onClick={() => setFilter('code')}><TypeGlyph type="code" /><span>Code</span><b>{counts.code}</b></button>
-        <button type="button" aria-label="Favorites" aria-pressed={filter === 'favorite'} className={filter === 'favorite' ? 'active' : ''} onClick={() => setFilter('favorite')}><StarIcon /><span>Saved</span><b>{counts.favorite}</b></button>
+      <div className="capture-notices">
+        {captureStatus === 'checking' && <div className="notice checking-notice"><span className="notice-spinner" aria-hidden="true" />Checking whether this page can be captured…</div>}
+        {captureStatus === 'restricted' && <div className="notice"><span>This browser page cannot be captured. Try a normal website.</span></div>}
+        {captureStatus === 'excluded' && <div className="notice notice-action"><span>This site is excluded in Clipboard+ settings.</span><button type="button" onClick={() => void chrome.runtime.openOptionsPage()}>Open Capture Controls</button></div>}
+        {captureStatus === 'permission' && <div className="notice notice-action"><span>Website access is off, so copies on websites are not saved.</span><button type="button" onClick={() => void chrome.runtime.openOptionsPage()}>Open Capture Controls</button></div>}
+        {captureStatus === 'disabled' && <div className="notice notice-action"><span>Automatic website capture is off.</span><button type="button" onClick={() => void chrome.runtime.openOptionsPage()}>Open Capture Controls</button></div>}
+        {captureStatus === 'unavailable' && <div className="notice error-notice notice-action"><span>Clipboard+ could not reach the capture listener on this page.</span><button type="button" onClick={retryCaptureCheck}>Retry</button></div>}
+        {capturePaused && <div className="notice notice-action pause-notice"><span>{capturePauseNotice(state?.settings)}</span><button type="button" onClick={() => void toggleQuickPause()}>Resume</button></div>}
       </div>
 
-      {captureStatus === 'checking' && <div className="notice checking-notice"><span className="notice-spinner" aria-hidden="true" />Checking whether this page can be captured…</div>}
-      {captureStatus === 'restricted' && <div className="notice"><span>This browser page cannot be captured. Try a normal website.</span></div>}
-      {captureStatus === 'excluded' && <div className="notice notice-action"><span>This site is excluded in Clipboard+ settings.</span><button type="button" onClick={() => void chrome.runtime.openOptionsPage()}>Open Capture Controls</button></div>}
-      {captureStatus === 'permission' && <div className="notice notice-action"><span>Website access is off, so copies on websites are not saved.</span><button type="button" onClick={() => void chrome.runtime.openOptionsPage()}>Open Capture Controls</button></div>}
-      {captureStatus === 'disabled' && <div className="notice notice-action"><span>Automatic website capture is off.</span><button type="button" onClick={() => void chrome.runtime.openOptionsPage()}>Open Capture Controls</button></div>}
-      {captureStatus === 'unavailable' && <div className="notice error-notice notice-action"><span>Clipboard+ could not reach the capture listener on this page.</span><button type="button" onClick={retryCaptureCheck}>Retry</button></div>}
-      {capturePaused && <div className="notice notice-action pause-notice"><span>{capturePauseNotice(state?.settings)}</span><button type="button" onClick={() => void toggleQuickPause()}>Resume</button></div>}
+      <div className="workspace-body">
+        <nav className="workspace-nav" aria-label="Clip views">
+          <div className="nav-main">
+            <button type="button" aria-label="All" title="All" aria-pressed={filter === 'all'} className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}><ClipboardIcon /><span>All</span><b>{counts.all}</b></button>
+            <button type="button" aria-label="Saved" title="Saved" aria-pressed={filter === 'favorite'} className={filter === 'favorite' ? 'active' : ''} onClick={() => setFilter('favorite')}><StarIcon /><span>Saved</span><b>{counts.favorite}</b></button>
+          </div>
+          <div className="nav-types" role="group" aria-label="Filter clips by type">
+            <button type="button" aria-label="Text" title="Text" aria-pressed={filter === 'text'} className={filter === 'text' ? 'active' : ''} onClick={() => setFilter('text')}><TypeGlyph type="text" /><span>Text</span><b>{counts.text}</b></button>
+            <button type="button" aria-label="Links" title="Links" aria-pressed={filter === 'url'} className={filter === 'url' ? 'active' : ''} onClick={() => setFilter('url')}><TypeGlyph type="url" /><span>Links</span><b>{counts.url}</b></button>
+            <button type="button" aria-label="Code" title="Code" aria-pressed={filter === 'code'} className={filter === 'code' ? 'active' : ''} onClick={() => setFilter('code')}><TypeGlyph type="code" /><span>Code</span><b>{counts.code}</b></button>
+          </div>
+          <div className="nav-bottom">
+            <button type="button" aria-label="Save tab" title="Save tab" onClick={() => void saveTab()}><LinkIcon /><span>Save tab</span></button>
+          </div>
+        </nav>
 
-      <div className="content-scroll" ref={scrollRef} onKeyDown={handleListKeyDown}>
+        <section className="results-pane" aria-label={`${viewTitle} clips`}>
+          <div className="results-heading"><h1>{viewTitle}</h1><span>{visible.length} {visible.length === 1 ? 'clip' : 'clips'}</span></div>
+          <div className="content-scroll" ref={scrollRef} onKeyDown={handleListKeyDown}>
         {!state && loadStatus === 'loading' ? (
           <div className="loading" role="status" aria-live="polite"><span /><span /><span /><b className="sr-only">Loading your clips</b></div>
         ) : !state ? (
@@ -574,8 +604,33 @@ export function Popup() {
             <p>{query || filter !== 'all' ? 'Try another search or filter.' : COMPANION_ENABLED ? 'Copy text in any app or add your first clip above.' : 'Add a clip manually or enable website capture in Settings.'}</p>
           </div>
         ) : (
-          <>{renderSection('Favorites', favorites, true)}{renderSection('Recent', history)}</>
+          renderClips(filter === 'favorite' ? favorites : history)
         )}
+          </div>
+        </section>
+
+        <aside className="detail-pane" aria-label="Clip details">
+          {selectedClip ? (
+            <>
+              <div className="detail-heading">
+                <span className={`detail-type ${selectedClip.type}`}><TypeGlyph type={selectedClip.type} />{selectedClip.type === 'url' ? 'Link' : selectedClip.type === 'code' ? 'Code' : 'Text'}</span>
+                <button type="button" className="icon-button" aria-label="Preview full clip" onClick={() => handlePreview(selectedClip)}><EyeIcon /></button>
+              </div>
+              <pre className={`detail-content ${selectedClip.type === 'code' ? 'is-code' : ''}`} aria-label="Selected clip content" tabIndex={0}>{selectedClip.content}</pre>
+              <dl className="detail-meta">
+                {selectedClip.title && <div><dt>Page</dt><dd title={selectedClip.title}>{selectedClip.title}</dd></div>}
+                {sourceHost(selectedClip.sourceUrl) && <div><dt>Source</dt><dd>{sourceHost(selectedClip.sourceUrl)}</dd></div>}
+                {selectedClip.sourceApp && <div><dt>App</dt><dd>{selectedClip.sourceApp}</dd></div>}
+                <div><dt>Updated</dt><dd>{clipDate(selectedClip.updatedAt)}</dd></div>
+              </dl>
+              <div className="detail-actions">
+                <button type="button" className="primary-button" onClick={() => handleCopy(selectedClip)}><CopyOriginalIcon />{hasSnippetFields(selectedClip.content) ? 'Fill & copy' : copiedId === selectedClip.id ? 'Copied' : 'Copy clip'}</button>
+                <button type="button" className="secondary-button" onClick={() => void perform({ type: 'TOGGLE_FAVORITE', payload: { id: selectedClip.id } })}><StarIcon fill={selectedClip.favorite ? 'currentColor' : 'none'} />{selectedClip.favorite ? 'Unsave' : 'Save'}</button>
+                <button type="button" className="icon-button detail-transform" aria-label="Transform and copy" onClick={() => setTransforming(selectedClip)}><WandIcon /></button>
+              </div>
+            </>
+          ) : <div className="detail-empty"><ClipboardIcon /><p>Select a clip to preview it here.</p></div>}
+        </aside>
       </div>
 
       {undoOffer && (

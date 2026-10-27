@@ -5,6 +5,7 @@ export const MAX_CLIP_LENGTH = 50_000;
 export const CAPTURE_CONSENT_VERSION = 1;
 
 export const DEFAULT_SETTINGS: Settings = {
+  theme: 'light',
   autoCapture: false,
   historyLimit: 500,
   retentionDays: 0,
@@ -199,6 +200,7 @@ export function migrateState(value: unknown): StorageState {
     settings: {
       ...DEFAULT_SETTINGS,
       ...storedSettings,
+      theme: storedSettings.theme === 'dark' ? 'dark' : 'light',
       autoCapture: hasCurrentConsent && storedSettings.autoCapture === true,
       retentionDays,
       excludedSites: Array.isArray(candidate.settings?.excludedSites)

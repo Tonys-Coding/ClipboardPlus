@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_SETTINGS } from '../lib/clips';
@@ -27,7 +27,7 @@ describe('Options', () => {
         onAdded: { addListener: vi.fn(), removeListener: vi.fn() },
         onRemoved: { addListener: vi.fn(), removeListener: vi.fn() },
       },
-      runtime: { getManifest: vi.fn(() => ({ version: '1.8.2' })) },
+      runtime: { getManifest: vi.fn(() => ({ version: '1.8.3' })) },
       commands: { getAll: vi.fn().mockResolvedValue([{ name: '_execute_action', shortcut: 'Alt+Shift+C' }]) },
       scripting: { getRegisteredContentScripts: vi.fn().mockResolvedValue([]) },
       tabs: { create: vi.fn().mockResolvedValue(undefined) },
@@ -46,6 +46,9 @@ describe('Options', () => {
 
     await user.selectOptions(screen.getByLabelText('History limit'), '250');
     expect(sendMessage).toHaveBeenCalledWith({ type: 'UPDATE_SETTINGS', payload: { historyLimit: 250 } });
+
+    await user.selectOptions(screen.getByLabelText('Appearance'), 'dark');
+    expect(sendMessage).toHaveBeenCalledWith({ type: 'UPDATE_SETTINGS', payload: { theme: 'dark' } });
 
     await user.type(screen.getByLabelText('Site to exclude'), 'https://www.example.com/path');
     await user.click(screen.getByRole('button', { name: 'Add site' }));
@@ -104,20 +107,13 @@ describe('Options', () => {
     }));
   });
 
-  it('moves the top spotlight and renders the supplied side artwork', async () => {
+  it('uses a consistent set of capture icons without a cursor spotlight', async () => {
     const { container } = render(<Options />);
     await screen.findByText('Automatic web capture');
 
     expect(container.querySelectorAll('img[src="/assets/clipboard-plus-single.png"]')).toHaveLength(6);
-    const pointerMove = new Event('pointermove');
-    Object.defineProperties(pointerMove, {
-      clientX: { value: 320 },
-      clientY: { value: 480 },
-      pointerType: { value: 'mouse' },
-    });
-    fireEvent(window, pointerMove);
-    expect(document.documentElement.style.getPropertyValue('--spotlight-x')).toBe('320px');
-    expect(document.documentElement.style.getPropertyValue('--spotlight-y')).toBe('480px');
+    expect(container.querySelector('.spotlight-stage')).not.toBeInTheDocument();
+    expect(container.querySelectorAll('.capture-type-option .capture-type-icon')).toHaveLength(3);
   });
 
   it('updates retention, capture categories, privacy pause, and source details', async () => {
@@ -145,7 +141,7 @@ describe('Options', () => {
   it('shows the runtime version, the current shortcut, and shortcut settings instructions', async () => {
     const user = userEvent.setup();
     render(<Options />);
-    await screen.findByText('Clipboard+ 1.8.2');
+    await screen.findByText('Clipboard+ 1.8.3');
     expect(await screen.findByText('Press Alt+Shift+C to open Clipboard+ and focus search.')).toBeInTheDocument();
     expect(screen.getByText(/browser-only shortcut works while Chrome is in front/)).toBeInTheDocument();
 
@@ -177,13 +173,13 @@ describe('Options', () => {
       permissions: { websiteAccess: true },
     });
     render(<Options />);
-    await screen.findByText('Clipboard+ 1.8.2');
+    await screen.findByText('Clipboard+ 1.8.3');
 
     await user.click(screen.getByRole('button', { name: 'Copy troubleshooting details' }));
 
     const report = clipboardWrite.mock.calls.at(-1)?.[0] ?? '';
     expect(report).toContain('Clipboard+ troubleshooting details');
-    expect(report).toContain('Version: 1.8.2');
+    expect(report).toContain('Version: 1.8.3');
     expect(report).toMatch(/Build profile: (?:development|store)/);
     expect(report).toContain('Capture listener registered: no');
     expect(report).not.toContain('SEKRIT');
@@ -197,7 +193,7 @@ describe('Options', () => {
     const user = userEvent.setup();
     vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('blocked'));
     render(<Options />);
-    await screen.findByText('Clipboard+ 1.8.2');
+    await screen.findByText('Clipboard+ 1.8.3');
 
     await user.click(screen.getByRole('button', { name: 'Copy troubleshooting details' }));
     expect(await screen.findByText(/Clipboard access was blocked/, { selector: '.diagnostics-feedback' })).toBeInTheDocument();
@@ -208,7 +204,7 @@ describe('Options', () => {
     const clipboardWrite = vi.spyOn(navigator.clipboard, 'writeText');
     vi.mocked(sendMessage).mockResolvedValue({ ok: true, state, permissions: { websiteAccess: true } });
     render(<Options />);
-    await screen.findByText('Clipboard+ 1.8.2');
+    await screen.findByText('Clipboard+ 1.8.3');
 
     // Capture is enabled elsewhere: storage and permission events must refresh the About status.
     vi.mocked(sendMessage).mockResolvedValue({
@@ -253,7 +249,7 @@ describe('Options', () => {
       permissions: { websiteAccess: true },
     });
     render(<Options />);
-    await screen.findByText('Clipboard+ 1.8.2');
+    await screen.findByText('Clipboard+ 1.8.3');
 
     await user.click(screen.getByRole('button', { name: 'Copy troubleshooting details' }));
     const report = clipboardWrite.mock.calls.at(-1)?.[0] ?? '';
@@ -264,7 +260,7 @@ describe('Options', () => {
     const user = userEvent.setup();
     const clipboardWrite = vi.spyOn(navigator.clipboard, 'writeText');
     render(<Options />);
-    await screen.findByText('Clipboard+ 1.8.2');
+    await screen.findByText('Clipboard+ 1.8.3');
 
     vi.mocked(sendMessage).mockRejectedValue(new Error('Clipboard+ background service is unavailable.'));
     await user.click(screen.getByRole('button', { name: 'Copy troubleshooting details' }));
@@ -276,7 +272,7 @@ describe('Options', () => {
   it('announces diagnostics feedback through a polite live region', async () => {
     const user = userEvent.setup();
     render(<Options />);
-    await screen.findByText('Clipboard+ 1.8.2');
+    await screen.findByText('Clipboard+ 1.8.3');
 
     await user.click(screen.getByRole('button', { name: 'Copy troubleshooting details' }));
     const liveRegion = await screen.findByText('Troubleshooting details copied to your clipboard.');

@@ -20,8 +20,14 @@ const state: StorageState = {
 };
 
 const mockedSend = vi.mocked(sendMessage);
+const clipList = () => within(screen.getByRole('region', { name: /clips$/i }));
+const getClipText = (text: string) => clipList().getByText(text);
+const queryClipText = (text: string) => clipList().queryByText(text);
+const findClipText = (text: string) => clipList().findByText(text);
+
 beforeEach(() => {
   vi.clearAllMocks();
+  document.documentElement.dataset.theme = 'light';
   mockedSend.mockResolvedValue({ ok: true, state });
   vi.stubGlobal('chrome', {
     tabs: {
@@ -38,58 +44,83 @@ beforeEach(() => {
 });
 
 describe('Clipboard+ popup', () => {
+  it('saves and applies the popup theme without changing clips', async () => {
+    const user = userEvent.setup();
+    mockedSend.mockImplementation(async (message) => ({
+      ok: true,
+      state: message.type === 'UPDATE_SETTINGS'
+        ? { ...state, settings: { ...state.settings, theme: 'dark' } }
+        : state,
+    }));
+    render(<Popup />);
+    const toggle = await screen.findByRole('button', { name: 'Dark mode' });
+    expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    await user.click(toggle);
+    expect(mockedSend).toHaveBeenCalledWith({ type: 'UPDATE_SETTINGS', payload: { theme: 'dark' } });
+    expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
+    expect(getClipText('Recent note')).toBeInTheDocument();
+  });
+
   it('keeps favorites exclusively in Saved while filtering and copying history', async () => {
     const user = userEvent.setup();
     const clipboardWrite = vi.spyOn(navigator.clipboard, 'writeText');
     render(<Popup />);
     expect(await screen.findByText('Recent')).toBeInTheDocument();
-    expect(screen.queryByText('Favorites')).not.toBeInTheDocument();
-    expect(screen.queryByText('https://example.com')).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Saved' })).not.toBeInTheDocument();
+    expect(queryClipText('https://example.com')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'All' })).toHaveTextContent('3');
-    expect(screen.getByRole('button', { name: 'Favorites' })).toHaveTextContent('1');
+    expect(screen.getByRole('button', { name: 'Saved' })).toHaveTextContent('1');
     expect(await screen.findByRole('textbox', { name: 'Search clips' })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Favorites' }));
-    expect(screen.getByText('Favorites')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Saved' }));
+    expect(screen.getByRole('heading', { name: 'Saved' })).toBeInTheDocument();
     expect(screen.queryByText('Recent')).not.toBeInTheDocument();
-    expect(screen.getByText('https://example.com')).toBeInTheDocument();
-    expect(screen.queryByText('Recent note')).not.toBeInTheDocument();
+    expect(getClipText('https://example.com')).toBeInTheDocument();
+    expect(queryClipText('Recent note')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Links' }));
+    expect(screen.getByRole('heading', { name: 'Links' })).toBeInTheDocument();
+    expect(queryClipText('https://example.com')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Saved' }));
 
     await user.click(screen.getByRole('button', { name: /copy url clip: https:\/\/example\.com/i }));
     expect(clipboardWrite).toHaveBeenCalledWith('https://example.com');
-    expect(await screen.findByText('Copied')).toBeInTheDocument();
+    expect(within(getClipText('https://example.com').closest('article')!).getByText('Copied')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'All' }));
 
-    const recentCard = screen.getByText('Recent note').closest('article')!;
+    const recentCard = getClipText('Recent note').closest('article')!;
     expect(within(recentCard).getByText('Recent note')).toHaveClass('clip-content');
     expect(within(recentCard).getByText('google.com')).toBeInTheDocument();
     expect(within(recentCard).getByText('TEXT')).toBeInTheDocument();
     expect(within(recentCard).getByText('Google Chrome')).toBeInTheDocument();
-    expect(screen.queryByText('A misleading page title')).not.toBeInTheDocument();
+    expect(within(recentCard).queryByText('A misleading page title')).not.toBeInTheDocument();
+    expect(within(screen.getByRole('complementary', { name: 'Clip details' })).getByText('A misleading page title')).toBeInTheDocument();
 
     await user.type(screen.getByRole('textbox', { name: 'Search clips' }), 'Example home');
-    expect(screen.queryByText('https://example.com')).not.toBeInTheDocument();
+    expect(queryClipText('https://example.com')).not.toBeInTheDocument();
     expect(screen.getByText('No matching clips')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Clear search' }));
 
     await user.type(screen.getByRole('textbox', { name: 'Search clips' }), 'note');
     expect(screen.queryByText('Example home')).not.toBeInTheDocument();
-    expect(screen.getByText('Recent note')).toBeInTheDocument();
+    expect(getClipText('Recent note')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Clear search' }));
     await user.click(screen.getByRole('button', { name: 'Links' }));
-    expect(screen.queryByText('https://example.com')).not.toBeInTheDocument();
+    expect(queryClipText('https://example.com')).not.toBeInTheDocument();
     expect(screen.getByText('No matching clips')).toBeInTheDocument();
-    expect(screen.queryByText('Recent note')).not.toBeInTheDocument();
+    expect(queryClipText('Recent note')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Text' }));
-    expect(screen.queryByText('https://example.com')).not.toBeInTheDocument();
-    expect(screen.getByText('Recent note')).toBeInTheDocument();
+    expect(queryClipText('https://example.com')).not.toBeInTheDocument();
+    expect(getClipText('Recent note')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Code' }));
-    expect(screen.getByText('const answer = 42;')).toBeInTheDocument();
-    expect(screen.queryByText('Recent note')).not.toBeInTheDocument();
+    expect(getClipText('const answer = 42;')).toBeInTheDocument();
+    expect(queryClipText('Recent note')).not.toBeInTheDocument();
   });
 
   it('focuses search on open and moves through visible rows with the arrow keys', async () => {
@@ -116,10 +147,30 @@ describe('Clipboard+ popup', () => {
     expect(clipboardWrite).toHaveBeenCalledWith('Recent note');
   });
 
+  it('keeps clip content primary in the detail pane and follows keyboard focus', async () => {
+    const user = userEvent.setup();
+    const clipboardWrite = vi.spyOn(navigator.clipboard, 'writeText');
+    render(<Popup />);
+    await findClipText('Recent note');
+
+    const detail = within(screen.getByRole('complementary', { name: 'Clip details' }));
+    expect(detail.getByText('Recent note')).toHaveClass('detail-content');
+    expect(detail.getByText('google.com')).toBeInTheDocument();
+    expect(detail.getByText('Google Chrome')).toBeInTheDocument();
+    expect(detail.getByText('A misleading page title')).toBeInTheDocument();
+
+    await user.keyboard('{ArrowDown}{ArrowDown}');
+    expect(detail.getByText('const answer = 42;')).toHaveClass('detail-content');
+    expect(getClipText('const answer = 42;').closest('article')).toHaveClass('is-selected');
+
+    await user.click(screen.getByRole('button', { name: /copy code clip: const answer = 42;/i }));
+    expect(clipboardWrite).toHaveBeenCalledWith('const answer = 42;');
+  });
+
   it('adds manual clips and saves the active tab', async () => {
     const user = userEvent.setup();
     render(<Popup />);
-    await screen.findByText('Recent note');
+    await findClipText('Recent note');
     await user.click(screen.getByRole('button', { name: /add clip/i }));
     await user.type(screen.getByLabelText(/Paste or type anything/), 'A new clip');
     await user.click(screen.getByRole('button', { name: /save clip/i }));
@@ -135,8 +186,8 @@ describe('Clipboard+ popup', () => {
   it('favorites, edits, and deletes from the overflow actions', async () => {
     const user = userEvent.setup();
     render(<Popup />);
-    await screen.findByText('Recent note');
-    const recentCard = screen.getByText('Recent note').closest('article')!;
+    await findClipText('Recent note');
+    const recentCard = getClipText('Recent note').closest('article')!;
 
     await user.click(within(recentCard).getByRole('button', { name: 'Clip actions' }));
     await user.click(screen.getByRole('menuitem', { name: /add to favorites/i }));
@@ -165,8 +216,8 @@ describe('Clipboard+ popup', () => {
       return { ok: true, state };
     });
     render(<Popup />);
-    await screen.findByText('Recent note');
-    const recentCard = screen.getByText('Recent note').closest('article')!;
+    await findClipText('Recent note');
+    const recentCard = getClipText('Recent note').closest('article')!;
 
     await user.click(within(recentCard).getByRole('button', { name: 'Clip actions' }));
     await user.click(screen.getByRole('menuitem', { name: 'Delete' }));
@@ -185,8 +236,8 @@ describe('Clipboard+ popup', () => {
         : { ok: true, state }
     ));
     render(<Popup />);
-    await screen.findByText('Recent note');
-    const recentCard = screen.getByText('Recent note').closest('article')!;
+    await findClipText('Recent note');
+    const recentCard = getClipText('Recent note').closest('article')!;
 
     await user.click(within(recentCard).getByRole('button', { name: 'Clip actions' }));
     await user.click(screen.getByRole('menuitem', { name: 'Delete' }));
@@ -220,8 +271,8 @@ describe('Clipboard+ popup', () => {
       state: { ...state, clips: [{ id: 'long', type: 'code', content: long, favorite: false, createdAt: 1, updatedAt: 1 }] },
     });
     render(<Popup />);
-    await screen.findByText('first line', { exact: false });
-    const card = screen.getByText(/first line/).closest('article')!;
+    await clipList().findByText('first line', { exact: false });
+    const card = clipList().getByText(/first line/).closest('article')!;
 
     await user.click(within(card).getByRole('button', { name: 'Clip actions' }));
     await user.click(screen.getByRole('menuitem', { name: 'Preview' }));
@@ -278,8 +329,8 @@ describe('Clipboard+ popup', () => {
     const user = userEvent.setup();
     const clipboardWrite = vi.spyOn(navigator.clipboard, 'writeText');
     render(<Popup />);
-    await screen.findByText('Recent note');
-    const recentCard = screen.getByText('Recent note').closest('article')!;
+    await findClipText('Recent note');
+    const recentCard = getClipText('Recent note').closest('article')!;
 
     await user.click(within(recentCard).getByRole('button', { name: 'Clip actions' }));
     await user.click(screen.getByRole('menuitem', { name: 'Transform & copy' }));
@@ -289,15 +340,15 @@ describe('Clipboard+ popup', () => {
     await user.click(screen.getByRole('button', { name: 'Copy result' }));
 
     expect(clipboardWrite).toHaveBeenCalledWith('RECENT NOTE');
-    expect(screen.getByText('Recent note')).toBeInTheDocument();
+    expect(getClipText('Recent note')).toBeInTheDocument();
     expect(await screen.findByText('Transformed copy ready')).toBeInTheDocument();
   });
 
   it('keeps action menus above other clips and flips them upward near the popup edge', async () => {
     const user = userEvent.setup();
     render(<Popup />);
-    await screen.findByText('Recent note');
-    const recentCard = screen.getByText('Recent note').closest('article')!;
+    await findClipText('Recent note');
+    const recentCard = getClipText('Recent note').closest('article')!;
     const trigger = within(recentCard).getByRole('button', { name: 'Clip actions' });
     vi.spyOn(trigger, 'getBoundingClientRect').mockReturnValue(new DOMRect(450, 520, 31, 31));
     Object.defineProperty(window, 'innerHeight', { configurable: true, value: 600 });
@@ -311,8 +362,8 @@ describe('Clipboard+ popup', () => {
   it('navigates the clip menu with arrows, Home, End, and Escape', async () => {
     const user = userEvent.setup();
     render(<Popup />);
-    await screen.findByText('Recent note');
-    const recentCard = screen.getByText('Recent note').closest('article')!;
+    await findClipText('Recent note');
+    const recentCard = getClipText('Recent note').closest('article')!;
     const trigger = within(recentCard).getByRole('button', { name: 'Clip actions' });
 
     await user.click(trigger);
@@ -338,9 +389,9 @@ describe('Clipboard+ popup', () => {
   it('keeps a single clip menu open at a time', async () => {
     const user = userEvent.setup();
     render(<Popup />);
-    await screen.findByText('Recent note');
-    const recentCard = screen.getByText('Recent note').closest('article')!;
-    const codeCard = screen.getByText('const answer = 42;').closest('article')!;
+    await findClipText('Recent note');
+    const recentCard = getClipText('Recent note').closest('article')!;
+    const codeCard = getClipText('const answer = 42;').closest('article')!;
 
     await user.click(within(recentCard).getByRole('button', { name: 'Clip actions' }));
     expect(screen.getAllByRole('menu')).toHaveLength(1);
@@ -354,8 +405,8 @@ describe('Clipboard+ popup', () => {
   it('traps focus in a dialog, closes on Escape, and restores focus to the trigger', async () => {
     const user = userEvent.setup();
     render(<Popup />);
-    await screen.findByText('Recent note');
-    const recentCard = screen.getByText('Recent note').closest('article')!;
+    await findClipText('Recent note');
+    const recentCard = getClipText('Recent note').closest('article')!;
     const trigger = within(recentCard).getByRole('button', { name: 'Clip actions' });
 
     await user.click(trigger);
@@ -379,11 +430,11 @@ describe('Clipboard+ popup', () => {
   it('marks the popup background inert only while a dialog is open', async () => {
     const user = userEvent.setup();
     const { container } = render(<Popup />);
-    await screen.findByText('Recent note');
+    await findClipText('Recent note');
     const content = () => container.querySelector('.popup-content');
     expect(content()).not.toHaveAttribute('inert');
 
-    const recentCard = screen.getByText('Recent note').closest('article')!;
+    const recentCard = getClipText('Recent note').closest('article')!;
     await user.click(within(recentCard).getByRole('button', { name: 'Clip actions' }));
     await user.click(screen.getByRole('menuitem', { name: 'Preview' }));
     expect(content()).toHaveAttribute('inert');
@@ -395,7 +446,7 @@ describe('Clipboard+ popup', () => {
   it('announces ordinary copy success in a polite live region', async () => {
     const user = userEvent.setup();
     render(<Popup />);
-    await screen.findByText('Recent note');
+    await findClipText('Recent note');
     await user.click(screen.getByRole('button', { name: /copy text clip: recent note/i }));
     const announcement = await screen.findByText('Copied to clipboard');
     expect(announcement).toHaveAttribute('role', 'status');
@@ -425,14 +476,14 @@ describe('Clipboard+ popup', () => {
         : { ok: true, state }
     ));
     render(<Popup />);
-    await screen.findByText('Recent note');
-    const card = screen.getByText('Recent note').closest('article')!;
+    await findClipText('Recent note');
+    const card = getClipText('Recent note').closest('article')!;
 
     await user.click(within(card).getByRole('button', { name: 'Clip actions' }));
     await user.click(screen.getByRole('menuitem', { name: 'Delete' }));
 
     await waitFor(() => expect(document.activeElement?.hasAttribute('data-clip-row')).toBe(true));
-    expect(screen.queryByText('Recent note')).not.toBeInTheDocument();
+    expect(queryClipText('Recent note')).not.toBeInTheDocument();
     await user.keyboard('{Enter}');
     expect(vi.mocked(navigator.clipboard.writeText)).toHaveBeenCalled();
   });
@@ -447,8 +498,8 @@ describe('Clipboard+ popup', () => {
       message.type === 'DELETE_CLIP' ? { ok: true, state: { ...single, clips: [] } } : { ok: true, state: single }
     ));
     render(<Popup />);
-    await screen.findByText('Only clip');
-    const card = screen.getByText('Only clip').closest('article')!;
+    await findClipText('Only clip');
+    const card = getClipText('Only clip').closest('article')!;
     await user.click(within(card).getByRole('button', { name: 'Clip actions' }));
     await user.click(screen.getByRole('menuitem', { name: 'Delete' }));
 
@@ -458,9 +509,9 @@ describe('Clipboard+ popup', () => {
   it('exits the clip menu with Tab and Shift+Tab instead of dropping focus', async () => {
     const user = userEvent.setup();
     render(<Popup />);
-    await screen.findByText('Recent note');
-    const recentCard = screen.getByText('Recent note').closest('article')!;
-    const codeCard = screen.getByText('const answer = 42;').closest('article')!;
+    await findClipText('Recent note');
+    const recentCard = getClipText('Recent note').closest('article')!;
+    const codeCard = getClipText('const answer = 42;').closest('article')!;
     const trigger = within(recentCard).getByRole('button', { name: 'Clip actions' });
 
     await user.click(trigger);
@@ -499,8 +550,8 @@ describe('Clipboard+ popup', () => {
         : { ok: true, state }
     ));
     const { container } = render(<Popup />);
-    await screen.findByText('Recent note');
-    const card = screen.getByText('Recent note').closest('article')!;
+    await findClipText('Recent note');
+    const card = getClipText('Recent note').closest('article')!;
     await user.click(within(card).getByRole('button', { name: 'Clip actions' }));
     await user.click(screen.getByRole('menuitem', { name: 'Delete' }));
     await screen.findByText('Clip deleted.');
@@ -520,7 +571,7 @@ describe('Clipboard+ popup', () => {
 
     const retry = screen.getByRole('button', { name: 'Retry loading clips' });
     await user.click(retry);
-    expect(await screen.findByText('Recent note')).toBeInTheDocument();
+    expect(await findClipText('Recent note')).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
@@ -541,13 +592,13 @@ describe('Clipboard+ popup', () => {
       await act(async () => {
         fireEvent.click(screen.getByRole('button', { name: 'Retry loading clips' }));
       });
-      expect(screen.getByText('Recent note')).toBeInTheDocument();
+      expect(getClipText('Recent note')).toBeInTheDocument();
 
       // The abandoned first request resolving later must not clobber the newer state.
       await act(async () => {
         resolveHungLoad({ ok: true, state: { ...state, clips: [] } });
       });
-      expect(screen.getByText('Recent note')).toBeInTheDocument();
+      expect(getClipText('Recent note')).toBeInTheDocument();
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     } finally {
       vi.useRealTimers();
@@ -562,9 +613,9 @@ describe('Clipboard+ popup', () => {
     await act(async () => {
       onStorage({ [STORAGE_KEY]: { newValue: state } }, 'local');
     });
-    expect(screen.getByText('Recent note')).toBeInTheDocument();
+    expect(getClipText('Recent note')).toBeInTheDocument();
     await act(async () => { resolveLoad({ ok: true, state: { ...state, clips: [] } }); });
-    expect(screen.getByText('Recent note')).toBeInTheDocument();
+    expect(getClipText('Recent note')).toBeInTheDocument();
   });
 
   it('shows a recovery action when optional website access is absent', async () => {

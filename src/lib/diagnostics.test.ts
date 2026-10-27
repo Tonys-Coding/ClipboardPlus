@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildTroubleshootingReport } from './diagnostics';
 
 const snapshot = {
-  manifestVersion: '1.8.2',
+  manifestVersion: '1.8.3',
   buildProfile: 'store' as const,
   captureEnabled: true,
   capturePaused: false,
@@ -16,7 +16,7 @@ describe('troubleshooting report', () => {
     expect(buildTroubleshootingReport(snapshot)).toBe([
       'Clipboard+ troubleshooting details',
       'Product: Clipboard+',
-      'Version: 1.8.2',
+      'Version: 1.8.3',
       'Build profile: store',
       'Capture enabled: yes',
       'Capture paused: no',

@@ -1,13 +1,57 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Clipboard+</title><meta name="description" content="A private, searchable clipboard history for Chrome."><link rel="stylesheet" href="assets/site.css"></head>
-<body><main>
-  <nav><img src="assets/clipboard-plus-logo.png" alt=""><strong>Clipboard+</strong><a href="release-notes.html">Release notes</a><a href="privacy.html">Privacy</a><a href="support.html">Support</a></nav>
-  <h1>Your useful text,<br>ready when you are.</h1>
-  <p class="lede">Clipboard+ keeps text, links, recognizable code, favorites, and reusable snippets searchable on your device. Website capture is optional and begins only after you enable it.</p>
-  <div class="card"><h2>Private by design</h2><p>Your history stays in Chrome's local extension storage. Clipboard+ has no account system, analytics, advertisements, or remote clipboard processing in its free v1.8.2 release.</p></div>
-  <div class="card"><h2>What's new in 1.8.2</h2><p>More reliable development capture: the store build now uses its own folder so it never overwrites the unpacked development extension, and queued macOS captures import in the background even when the popup is closed. See the <a href="release-notes.html">release notes</a>.</p></div>
-  <div class="card"><h2>What's new in 1.8.1</h2><p>Favorites now stay exclusively in Saved, keeping All and the category sections focused on non-favorite history. See the <a href="release-notes.html">release notes</a>.</p></div>
-  <div class="card"><h2>A permanent free core</h2><p>Everything included through Clipboard+ v1.8.2 remains free. Any future subscription will apply only to new services such as encrypted cross-device sync.</p></div>
-  <a class="button" href="support.html">Get support</a>
-  <footer>Clipboard+ is published by Tonys-Coding. This website does not use cookies or analytics.</footer>
-</main></body></html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Clipboard+ — Keep useful clips close</title>
+  <meta name="description" content="A private, searchable clipboard history for Chrome. Save text, links, code, and reusable snippets on your device.">
+  <script src="assets/site.js"></script>
+  <link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+  <header class="site-header"><nav class="site-nav" aria-label="Main navigation">
+    <a class="site-brand" href="index.html" aria-label="Clipboard+ home"><img src="assets/clipboard-plus-logo.png" alt=""><span>Clipboard<b>+</b></span></a>
+    <div class="site-links"><a href="release-notes.html">Release notes</a><a href="privacy.html">Privacy</a><a href="support.html">Support</a></div>
+    <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark mode"><svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.8A8.5 8.5 0 0 1 8.2 3.8 8.5 8.5 0 1 0 20.2 15.8Z"/></svg><svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
+  </nav></header>
+
+  <main class="site-main">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <h1 id="hero-title">Keep useful clips close.</h1>
+        <p>Find and reuse the text, links, code, and snippets you save in Chrome. Your clipboard history stays on your device.</p>
+        <div class="hero-actions">
+          <a class="button" href="https://chromewebstore.google.com/detail/clipboard+/acafdjminfkjkgecpfpggobfaplonioo">Add to Chrome</a>
+          <a class="button secondary" href="#how-it-works">How it works</a>
+        </div>
+      </div>
+      <figure class="product-figure">
+        <div class="product-frame"><img class="product-light" src="assets/workspace-preview.png" width="748" height="588" alt="Clipboard+ Workspace showing recent clips, a separate Saved section, and a full clip preview"><img class="product-dark" src="assets/workspace-preview-dark.png" width="748" height="588" alt="Clipboard+ Workspace in dark mode with the same recent clips and full preview"></div>
+        <figcaption>Illustrative clips shown in the Chrome extension Workspace.</figcaption>
+      </figure>
+    </section>
+
+    <section class="features" id="how-it-works" aria-label="How Clipboard+ works">
+      <div><h2>Catch what matters</h2><p>Save a clip manually, keep the current tab, or choose to enable automatic capture on websites you authorize.</p></div>
+      <div><h2>Find it quickly</h2><p>Search recent clips by content or source. Favorites live in their own Saved section, away from everyday history.</p></div>
+      <div><h2>Reuse in one click</h2><p>Click a result to copy it. Fill a smart snippet or transform text locally when you need a variation.</p></div>
+    </section>
+
+    <section class="control-preview" aria-labelledby="control-preview-title">
+      <div class="control-preview-copy">
+        <h2 id="control-preview-title">Capture, on your terms.</h2>
+        <p>Automatic website capture starts only when you enable it. Choose the types to keep, exclude sites, pause capture, or clear history at any time.</p>
+        <a href="privacy.html">See how local capture works</a>
+      </div>
+      <figure><img src="assets/capture-controls-preview.png" width="1280" height="800" alt="Capture Controls with text, link, and code choices plus optional source information"><figcaption>The current Capture Controls page in light mode.</figcaption></figure>
+    </section>
+
+    <section class="home-close" aria-labelledby="privacy-title">
+      <div><h2 id="privacy-title">Your history belongs to you.</h2><p>Automatic website capture is off until you enable it. The free Chrome extension uses local storage—no account, analytics, advertisements, or remote clipboard processing.</p></div>
+      <a class="button secondary" href="privacy.html">Read the privacy policy</a>
+    </section>
+  </main>
+
+  <footer class="site-footer"><p>Clipboard+ · Tonys-Coding · No cookies or analytics on this site.</p><div><a href="data-deletion.html">Delete your data</a><a href="support.html">Support</a><a href="release-notes.html">Release notes</a></div></footer>
+</body>
+</html>
