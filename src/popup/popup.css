@@ -196,10 +196,7 @@ textarea::placeholder, .snippet-fields input::placeholder { color: #73848a; opac
 .type-icon { display: grid; width: 20px; height: 20px; flex: 0 0 20px; place-items: center; margin-top: 1px; color: #996e11; }
 .type-icon.url { color: #217085; }
 .type-icon.code { color: #755d92; }
-.kind-glyph { display: block; width: 20px; height: 20px; flex: 0 0 auto; background: currentColor; -webkit-mask-position: center; mask-position: center; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-size: contain; mask-size: contain; }
-.kind-glyph.text { -webkit-mask-image: url("/icons/type-text.png"); mask-image: url("/icons/type-text.png"); }
-.kind-glyph.url { -webkit-mask-image: url("/icons/type-url.png"); mask-image: url("/icons/type-url.png"); }
-.kind-glyph.code { -webkit-mask-image: url("/icons/type-code.png"); mask-image: url("/icons/type-code.png"); }
+.kind-glyph { display: block; width: 20px; height: 20px; flex: 0 0 auto; }
 .clip-details { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 6px; }
 .clip-content { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; color: var(--ink); font-size: 14px; font-weight: 700; line-height: 1.35; overflow-wrap: anywhere; }
 .clip-meta { display: flex; overflow: hidden; color: var(--muted); font-size: 11px; white-space: nowrap; }

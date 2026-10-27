@@ -189,6 +189,7 @@ The form language is square-leaning and practical inside a 14px rounded popup fr
 ### Navigation
 
 - **Rail:** Petrol background, muted labels at rest, white labels on hover and selection. Active items have a lighter petrol fill and a narrow gold marker. Counts align on the right with tabular numerals; the final Save tab action sits at the bottom.
+- **Icon map:** Lucide Playing Cards Fan denotes All, Save denotes Saved and Save tab, Pencil Ruler denotes Text, Link 2 denotes Links, and Code XML denotes Code. Type icons repeat unchanged in rows, previews, and Capture Controls. The supplied Clipboard+ logo is not replaced.
 
 ### Clip Rows
 
@@ -218,4 +219,4 @@ The form language is square-leaning and practical inside a 14px rounded popup fr
 
 ## Related web surfaces
 
-Capture Controls is an operational page: wider measures, 14px rounded section boundaries, readable secondary text, and a shared light/dark preference with the popup. Floating clipboard artwork remains at the sides, never behind text or controls; the former cursor-following spotlight is removed. Lucide's quiet line icons identify clip types and page actions, while the supplied Clipboard+ logo remains the brand mark. The public website is a reading and discovery surface: the homepage demonstrates the real Workspace, while privacy, support, deletion, and release notes use a restrained single-column reading measure. Public pages share the same light-default/dark-toggle palette but keep their preference in website-local storage.
+Capture Controls is an operational page: wider measures, 14px rounded section boundaries, readable secondary text, and a shared light/dark preference with the popup. Floating clipboard artwork remains at the sides, never behind text or controls; the former cursor-following spotlight is removed. Lucide's quiet line icons identify clip types and page actions, while the supplied Clipboard+ logo remains the brand mark. Text uses Pencil Ruler, links use Link 2, and code uses Code XML in both the popup and Capture Controls. The public website is a reading and discovery surface: the homepage demonstrates the real Workspace, while privacy, support, deletion, and release notes use a restrained single-column reading measure. Public pages share the same light-default/dark-toggle palette but keep their preference in website-local storage.

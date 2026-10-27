@@ -2,6 +2,12 @@
 
 Clipboard+'s Git history was reconstructed from local development milestones after versions 1.0.0 through 1.4.2 had already been built. Those tags preserve the rollout order; their publication timestamps are intentionally not backdated. Releases from 1.5.0 onward follow the live project history.
 
+## 1.8.4
+
+- Use the requested Lucide icon set consistently across the five Workspace sections: Playing Cards Fan for All, Save for Saved, Pencil Ruler for Text, Link 2 for Links, and Code XML for Code.
+- Match the clip-row, detail, preview, and Capture Controls type icons to the same Text, Links, and Code symbols without changing capture or copying behavior.
+- Refresh the website previews and Chrome Web Store artwork to show the new iconography.
+
 ## 1.8.3
 
 - Carry the Workspace palette, Hanken typography, rounded surfaces, and a light-default/dark-toggle appearance across Capture Controls and the public home, privacy, support, data-deletion, and release-notes pages.

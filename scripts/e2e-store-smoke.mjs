@@ -185,7 +185,7 @@ try {
   const aboutPage = await context.newPage();
   await aboutPage.goto(`chrome-extension://${extensionId}/options.html`);
   await aboutPage.getByText('About & help').waitFor({ state: 'attached' });
-  await aboutPage.getByRole('heading', { name: 'Clipboard+ 1.8.3' }).waitFor({ state: 'attached' });
+  await aboutPage.getByRole('heading', { name: 'Clipboard+ 1.8.4' }).waitFor({ state: 'attached' });
   const diagnostics = await aboutPage.locator('.diagnostics-preview').textContent();
   assert(diagnostics.includes('Website access granted: no'), 'Troubleshooting details must report missing website access.');
   for (const secret of ['Manual store-profile clip', '{{name|friend}}', fixtureOrigin]) {

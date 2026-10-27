@@ -15,4 +15,4 @@
 13. Open Settings → About & help. Confirm the manifest version, current shortcut, and shortcut settings link appear, and that Copy troubleshooting details copies a short checklist with no clipboard contents, page addresses, excluded domains, or identifiers.
 14. Favorite a clip. Confirm it disappears from All and its category section, appears in Saved, and returns to the appropriate history/category section after it is unfavorited.
 
-The v1.8.3 store package has no account, backend, analytics, advertisements, native messaging, remote executable code, or off-device clipboard processing.
+The v1.8.4 store package has no account, backend, analytics, advertisements, native messaging, remote executable code, or off-device clipboard processing.

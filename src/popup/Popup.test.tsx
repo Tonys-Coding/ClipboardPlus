@@ -44,6 +44,23 @@ beforeEach(() => {
 });
 
 describe('Clipboard+ popup', () => {
+  it('uses the chosen Lucide icons for navigation and clip kinds', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<Popup />);
+    await screen.findByText('Recent');
+
+    expect(screen.getByRole('button', { name: 'All' }).querySelector('.lucide-playing-cards-fan')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Saved' }).querySelector('.lucide-save')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Text' }).querySelector('.lucide-pencil-ruler')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Links' }).querySelector('.lucide-link-2')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Code' }).querySelector('.lucide-code-xml')).toBeInTheDocument();
+    expect(container.querySelector('.clip-card.text .lucide-pencil-ruler')).toBeInTheDocument();
+    expect(container.querySelector('.clip-card.code .lucide-code-xml')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Saved' }));
+    expect(container.querySelector('.clip-card.url .lucide-link-2')).toBeInTheDocument();
+  });
+
   it('saves and applies the popup theme without changing clips', async () => {
     const user = userEvent.setup();
     mockedSend.mockImplementation(async (message) => ({

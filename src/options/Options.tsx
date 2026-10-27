@@ -1,5 +1,5 @@
 import { FormEvent, useCallback, useEffect, useLayoutEffect, useState } from 'react';
-import { Check, Code2, Copy, FileText, Link2, Plus, Trash2, X } from 'lucide-react';
+import { Check, CodeXml, Copy, Link2, PencilRuler, Plus, Trash2, X } from 'lucide-react';
 import { CAPTURE_CONSENT_VERSION, STORAGE_KEY, captureIsPaused, normalizeHostname } from '../lib/clips';
 import { COMPANION_ENABLED } from '../lib/build';
 import { buildTroubleshootingReport } from '../lib/diagnostics';
@@ -433,7 +433,7 @@ export function Options() {
         <div className="capture-type-grid">
           {CAPTURE_TYPE_OPTIONS.map(({ type, label, detail }) => {
             const checked = state.settings.captureTypes.includes(type);
-            const Icon = type === 'text' ? FileText : type === 'url' ? Link2 : Code2;
+            const Icon = type === 'text' ? PencilRuler : type === 'url' ? Link2 : CodeXml;
             return <label className={`capture-type-option ${checked ? 'selected' : ''}`} key={type}><input type="checkbox" checked={checked} disabled={checked && state.settings.captureTypes.length === 1} onChange={() => void toggleCaptureType(type)} /><Icon className="capture-type-icon" aria-hidden="true" strokeWidth={1.8} /><span><strong>{label}</strong><small>{detail}</small></span></label>;
           })}
         </div>

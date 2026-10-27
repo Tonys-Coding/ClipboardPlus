@@ -14,14 +14,14 @@ Automatic website capture is optional. It starts only after you review the discl
 
 Clipboard+ v1.8 adds keyboard access, eight-second undo for single deletions, full clip preview, original copying for snippets, precise capture-state feedback, shared dialog and menu accessibility, and an About and help section with a redacted troubleshooting copy. Favorites stay exclusively in Saved instead of repeating across history and category views. It has no account system, analytics, advertising, or cloud synchronization. History and settings stay in Chrome's local extension storage on your device.
 
-Everything included through v1.8.3 is a permanent free core. Future paid services, if introduced, will apply only to new functionality such as encrypted cross-device synchronization.
+Everything included through v1.8.4 is a permanent free core. Future paid services, if introduced, will apply only to new functionality such as encrypted cross-device synchronization.
 
 ## Category and language
 
 - Category: Productivity
 - Primary language: English
 - Mature content: No
-- Contains paid functionality: No for v1.8.3
+- Contains paid functionality: No for v1.8.4
 - Initial visibility: Unlisted
 
 ## URLs

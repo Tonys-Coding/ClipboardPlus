@@ -1,6 +1,7 @@
 import { FormEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { CheckIcon, ClipboardIcon, CopyOriginalIcon, EyeIcon, LinkIcon, MoonIcon, PauseIcon, PlayIcon, PlusIcon, SearchIcon, SettingsIcon, StarIcon, SunIcon, TrashIcon, WandIcon, XIcon } from '../components/Icons';
+import { PlayingCardsFan, Save } from 'lucide-react';
+import { CheckIcon, ClipboardIcon, CopyOriginalIcon, EyeIcon, MoonIcon, PauseIcon, PlayIcon, PlusIcon, SearchIcon, SettingsIcon, StarIcon, SunIcon, TrashIcon, WandIcon, XIcon } from '../components/Icons';
 import { captureIsPaused, filterClips, STORAGE_KEY } from '../lib/clips';
 import { COMPANION_ENABLED } from '../lib/build';
 import { isRestrictedPage, resolveCaptureStatus, type CaptureStatus, type ListenerHealth } from '../lib/captureStatus';
@@ -573,8 +574,8 @@ export function Popup() {
       <div className="workspace-body">
         <nav className="workspace-nav" aria-label="Clip views">
           <div className="nav-main">
-            <button type="button" aria-label="All" title="All" aria-pressed={filter === 'all'} className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}><ClipboardIcon /><span>All</span><b>{counts.all}</b></button>
-            <button type="button" aria-label="Saved" title="Saved" aria-pressed={filter === 'favorite'} className={filter === 'favorite' ? 'active' : ''} onClick={() => setFilter('favorite')}><StarIcon /><span>Saved</span><b>{counts.favorite}</b></button>
+            <button type="button" aria-label="All" title="All" aria-pressed={filter === 'all'} className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}><PlayingCardsFan aria-hidden="true" strokeWidth={1.8} /><span>All</span><b>{counts.all}</b></button>
+            <button type="button" aria-label="Saved" title="Saved" aria-pressed={filter === 'favorite'} className={filter === 'favorite' ? 'active' : ''} onClick={() => setFilter('favorite')}><Save aria-hidden="true" strokeWidth={1.8} /><span>Saved</span><b>{counts.favorite}</b></button>
           </div>
           <div className="nav-types" role="group" aria-label="Filter clips by type">
             <button type="button" aria-label="Text" title="Text" aria-pressed={filter === 'text'} className={filter === 'text' ? 'active' : ''} onClick={() => setFilter('text')}><TypeGlyph type="text" /><span>Text</span><b>{counts.text}</b></button>
@@ -582,7 +583,7 @@ export function Popup() {
             <button type="button" aria-label="Code" title="Code" aria-pressed={filter === 'code'} className={filter === 'code' ? 'active' : ''} onClick={() => setFilter('code')}><TypeGlyph type="code" /><span>Code</span><b>{counts.code}</b></button>
           </div>
           <div className="nav-bottom">
-            <button type="button" aria-label="Save tab" title="Save tab" onClick={() => void saveTab()}><LinkIcon /><span>Save tab</span></button>
+            <button type="button" aria-label="Save tab" title="Save tab" onClick={() => void saveTab()}><Save aria-hidden="true" strokeWidth={1.8} /><span>Save tab</span></button>
           </div>
         </nav>
 

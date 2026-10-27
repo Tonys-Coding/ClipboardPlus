@@ -38,7 +38,7 @@ The Chrome extension opens as a compact popup. It has searchable history, a sepa
 
 - Current extension source and tests under `src/`.
 - Existing store screenshots under `store-assets/`.
-- Existing logo, category icons, and font assets under `public/`.
+- Official logo and bundled font assets under `public/`; the interface's current category icons come from bundled Lucide components.
 
 ## Product Principles
 
