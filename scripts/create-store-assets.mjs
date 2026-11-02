@@ -99,7 +99,28 @@ try {
     await page.close();
   };
   await renderPromo(440, 280, 'promo-small-440x280.png', 'promo-small-original.jpeg');
-  await renderPromo(1400, 560, 'promo-marquee-1400x560.png', 'promo-marquee-original.jpeg');
+
+  // Use the supplied real popup screenshot in the marquee, without cropping its UI.
+  const marqueePage = await context.newPage();
+  await marqueePage.setViewportSize({ width: 1400, height: 560 });
+  const marqueeScreenshot = (await readFile(resolve(output, 'source', 'promo-marquee-ui.png'))).toString('base64');
+  const font = (await readFile(resolve(root, 'public/fonts/HankenGrotesk-Variable.woff2'))).toString('base64');
+  await marqueePage.setContent(`<!doctype html><style>
+    @font-face{font-family:Hanken;src:url(data:font/woff2;base64,${font})}
+    *{box-sizing:border-box}
+    html,body{margin:0;width:1400px;height:560px;overflow:hidden}
+    body{display:grid;grid-template-columns:420px minmax(0,1fr);align-items:center;gap:20px;padding:58px 30px 58px 70px;color:#f6f8f7;background:radial-gradient(ellipse 920px 520px at 62% 42%,#234b58 0%,#1b3d49 55%,#173744 100%);font-family:Hanken,sans-serif}
+    .brand{display:flex;align-items:center;gap:18px;font-size:37px;font-weight:800;letter-spacing:-.035em}
+    .brand img{width:74px;height:74px;object-fit:contain}
+    .brand b{color:#f0bd35}
+    h1{margin:42px 0 17px;font-size:65px;line-height:1.02;letter-spacing:-.045em;font-weight:750}
+    p{margin:0;max-width:410px;color:#c7d6d9;font-size:24px;line-height:1.34}
+    .screenshot{display:block;width:100%;height:auto;border:1px solid #a8c3c7;border-radius:16px;box-shadow:0 22px 48px rgba(4,21,28,.32)}
+  </style><div><div class="brand"><img src="data:image/png;base64,${logo}" alt=""><span>Clipboard<b>+</b></span></div><h1>Keep useful<br>clips close.</h1><p>Text, links, code, and smart snippets—ready when you need them.</p></div><img class="screenshot" src="data:image/png;base64,${marqueeScreenshot}" alt="">`);
+  await marqueePage.locator('img').evaluateAll((images) => Promise.all(images.map((image) => image.decode())));
+  await marqueePage.evaluate(() => document.fonts.ready);
+  await marqueePage.screenshot({ path: resolve(output, 'promo-marquee-1400x560.png') });
+  await marqueePage.close();
 
   const iconPage = await context.newPage();
   await iconPage.setViewportSize({ width: 128, height: 128 });
