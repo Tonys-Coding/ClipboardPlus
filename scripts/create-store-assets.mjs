@@ -1,4 +1,4 @@
-import { readFile, mkdir, rm, copyFile } from 'node:fs/promises';
+import { readFile, mkdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { mkdtemp } from 'node:fs/promises';
@@ -11,6 +11,8 @@ const siteAssets = resolve(root, 'docs/assets');
 const profile = await mkdtemp(join(tmpdir(), 'clipboard-plus-assets-'));
 await mkdir(output, { recursive: true });
 await mkdir(siteAssets, { recursive: true });
+const logo = (await readFile(resolve(root, 'public/icons/clipboard-plus-logo.png'))).toString('base64');
+const font = (await readFile(resolve(root, 'public/fonts/HankenGrotesk-Variable.woff2'))).toString('base64');
 
 const now = Date.now();
 const clips = [
@@ -34,6 +36,29 @@ try {
   if (!worker) worker = await context.waitForEvent('serviceworker', { timeout: 10000 });
   const extensionId = new URL(worker.url()).host;
 
+  // Frame an unaltered capture of the running extension, never a recreated UI.
+  const renderListingScreenshot = async (capture, file, heading, description) => {
+    const page = await context.newPage();
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.setContent(`<!doctype html><html lang="en"><meta charset="utf-8"><style>
+      @font-face{font-family:"Hanken Grotesk";src:url(data:font/woff2;base64,${font}) format('woff2');font-display:block}
+      *{box-sizing:border-box}
+      html,body{margin:0;width:1280px;height:800px;overflow:hidden}
+      body{display:flex;align-items:center;gap:40px;padding:64px;color:#f5f8f5;background:#173744;font-family:"Hanken Grotesk",sans-serif}
+      .copy{width:348px;flex:none}
+      .brand{display:flex;align-items:center;gap:15px;font-size:27px;font-weight:800;letter-spacing:-.025em}
+      .brand img{width:64px;height:64px;object-fit:contain}
+      .brand b{color:#f0bd35}
+      h1{margin:48px 0 14px;font-size:48px;font-weight:750;letter-spacing:-.03em;line-height:1.06;text-wrap:balance}
+      p{margin:0;max-width:320px;color:#bdd0d0;font-size:21px;line-height:1.4}
+      .capture{width:748px;height:588px;flex:none;object-fit:contain;border-radius:14px;box-shadow:0 20px 44px rgba(5,24,31,.3)}
+    </style><div class="copy"><div class="brand"><img src="data:image/png;base64,${logo}" alt=""><span>Clipboard<b>+</b></span></div><h1>${heading}</h1><p>${description}</p></div><img class="capture" src="data:image/png;base64,${capture.toString('base64')}" alt="Genuine Clipboard+ interface capture"></html>`);
+    await page.locator('img').evaluateAll((images) => Promise.all(images.map((image) => image.decode())));
+    await page.evaluate(() => document.fonts.ready);
+    await page.screenshot({ path: resolve(output, file) });
+    await page.close();
+  };
+
   const setupPage = await context.newPage();
   await setupPage.goto(`chrome-extension://${extensionId}/options.html`);
   await setupPage.evaluate(async (sampleClips) => {
@@ -51,15 +76,12 @@ try {
   const popup = await context.newPage();
   await popup.goto(`chrome-extension://${extensionId}/popup.html`);
   await popup.locator('.clip-content').filter({ hasText: 'Keep useful clips close.' }).waitFor();
-  await popup.addStyleTag({ content: `
-    html, body, #root { width: 1280px !important; height: 800px !important; }
-    body, #root { display: grid !important; place-items: center !important; background: #e3ebea !important; }
-  ` });
   await popup.evaluate(() => document.fonts.ready);
   await popup.getByText('Website access is off, so copies on websites are not saved.').waitFor();
   await popup.getByRole('heading', { name: 'Recent' }).waitFor();
-  await popup.screenshot({ path: resolve(output, 'screenshot-1-history.png') });
-  await popup.locator('.popup-shell').screenshot({ path: resolve(siteAssets, 'workspace-preview.png') });
+  const popupShell = popup.locator('.popup-shell');
+  const historyCapture = await popupShell.screenshot({ path: resolve(siteAssets, 'workspace-preview.png') });
+  await renderListingScreenshot(historyCapture, 'screenshot-1-history.png', 'Keep useful clips close.', 'Text, links, and code stay ready to reuse.');
   await popup.getByRole('button', { name: 'Dark mode' }).click();
   await popup.getByRole('button', { name: 'Dark mode', pressed: true }).waitFor();
   await popup.locator('.popup-shell').screenshot({ path: resolve(siteAssets, 'workspace-preview-dark.png') });
@@ -68,17 +90,17 @@ try {
 
   await popup.getByRole('textbox', { name: 'Search clips' }).fill('tracking');
   await popup.locator('.clip-content').filter({ hasText: 'Remember to remove tracking parameters' }).waitFor();
-  await popup.screenshot({ path: resolve(output, 'screenshot-2-search.png') });
+  await renderListingScreenshot(await popupShell.screenshot(), 'screenshot-2-search.png', 'Find it in seconds.', 'Search what you copied, then click to copy it again.');
   await popup.getByRole('button', { name: 'Clear search' }).click();
   await popup.getByRole('button', { name: 'Code', exact: true }).click();
   await popup.locator('.clip-content').filter({ hasText: 'export function normalizeContent' }).waitFor();
-  await popup.screenshot({ path: resolve(output, 'screenshot-3-code-filter.png') });
+  await renderListingScreenshot(await popupShell.screenshot(), 'screenshot-3-code-filter.png', 'Give code its own view.', 'Find recognizable code snippets without digging through notes.');
   await popup.getByRole('button', { name: 'Saved', exact: true }).click();
   await popup.locator('[data-clip-row]').filter({ hasText: 'Hi {{name}}' }).click();
   const snippetDialog = popup.getByRole('dialog', { name: 'Fill in the fields' });
   await snippetDialog.getByRole('textbox', { name: 'name' }).fill('Alex');
   await snippetDialog.getByLabel('Snippet preview').getByText('Hi Alex, I’ll send the update by tomorrow morning.').waitFor();
-  await popup.screenshot({ path: resolve(output, 'screenshot-4-smart-snippet.png') });
+  await renderListingScreenshot(await popupShell.screenshot(), 'screenshot-4-smart-snippet.png', 'Reuse without retyping.', 'Fill in a saved snippet and preview it before copying.');
   // Show the real first-run disclosure in the fifth image, not a permission state we did not grant.
   await popup.evaluate(async () => {
     const stored = (await chrome.storage.local.get('clipboardPlus')).clipboardPlus;
@@ -93,11 +115,11 @@ try {
   await options.getByRole('heading', { name: 'Capture controls' }).waitFor();
   await options.getByRole('heading', { name: 'Enable automatic website capture?' }).waitFor();
   await options.evaluate(() => document.fonts.ready);
-  await options.screenshot({ path: resolve(output, 'screenshot-5-privacy-controls.png'), fullPage: false });
-  await copyFile(resolve(output, 'screenshot-5-privacy-controls.png'), resolve(siteAssets, 'capture-controls-preview.png'));
+  await options.screenshot({ path: resolve(siteAssets, 'capture-controls-preview.png'), fullPage: false });
+  await options.setViewportSize({ width: 748, height: 588 });
+  await renderListingScreenshot(await options.screenshot(), 'screenshot-5-privacy-controls.png', 'Capture is your choice.', 'Review website access before turning on automatic capture.');
   await options.close();
 
-  const logo = (await readFile(resolve(root, 'public/icons/clipboard-plus-logo.png'))).toString('base64');
   const renderPromo = async (width, height, file, sourceFile) => {
     const page = await context.newPage();
     await page.setViewportSize({ width, height });
@@ -116,7 +138,6 @@ try {
   const marqueePage = await context.newPage();
   await marqueePage.setViewportSize({ width: 1400, height: 560 });
   const marqueeScreenshot = (await readFile(resolve(output, 'source', 'promo-marquee-ui.png'))).toString('base64');
-  const font = (await readFile(resolve(root, 'public/fonts/HankenGrotesk-Variable.woff2'))).toString('base64');
   await marqueePage.setContent(`<!doctype html><style>
     @font-face{font-family:Hanken;src:url(data:font/woff2;base64,${font})}
     *{box-sizing:border-box}

@@ -1,6 +1,6 @@
 # Chrome Web Store screenshots
 
-These five 1280×800 PNGs are captured by `npm run assets:store` from the actual Clipboard+ store build running in Chromium. The script seeds representative local demo clips in a temporary browser profile; it does not use anyone's private clipboard history or draw substitute interface components.
+These five 1280×800 PNGs are captured by `npm run assets:store` from the actual Clipboard+ store build running in Chromium. The script seeds representative local demo clips in a temporary browser profile; it does not use anyone's private clipboard history or draw substitute interface components. Each unaltered UI capture is placed on the product's petrol-navy background alongside the official logo and a short use-case caption.
 
 1. `screenshot-1-history.png` — Recent history, category navigation, clip details, and the honest website-access-off state.
 2. `screenshot-2-search.png` — A successful content search returning a manual note.

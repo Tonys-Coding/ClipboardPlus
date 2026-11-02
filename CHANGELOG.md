@@ -8,6 +8,7 @@ Clipboard+'s Git history was reconstructed from local development milestones aft
 - Keep the supplied source JPEGs and update the asset generator so future refreshes preserve this artwork.
 - Replace the marquee's stylized mock interface with the owner's actual Clipboard+ popup screenshot, without cropping its controls or clip rows.
 - Recapture all five 1280×800 listing screenshots from the running store build with representative demo clips, successful search, actual Code filtering, a filled smart snippet, and the real first-run capture disclosure.
+- Present those five genuine captures on the Workspace's petrol-navy background with the official logo and a concise, accurate feature caption; the extension itself remains unchanged.
 
 ## 1.8.5
 
