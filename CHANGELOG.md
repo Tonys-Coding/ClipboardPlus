@@ -7,6 +7,7 @@ Clipboard+'s Git history was reconstructed from local development milestones aft
 - Replace the small and marquee promo tiles with the owner's high-resolution artwork, precisely fitted to the Chrome Web Store's 440×280 and 1400×560 requirements.
 - Keep the supplied source JPEGs and update the asset generator so future refreshes preserve this artwork.
 - Replace the marquee's stylized mock interface with the owner's actual Clipboard+ popup screenshot, without cropping its controls or clip rows.
+- Recapture all five 1280×800 listing screenshots from the running store build with representative demo clips, successful search, actual Code filtering, a filled smart snippet, and the real first-run capture disclosure.
 
 ## 1.8.5
 

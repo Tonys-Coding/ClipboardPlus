@@ -14,12 +14,12 @@ await mkdir(siteAssets, { recursive: true });
 
 const now = Date.now();
 const clips = [
-  { id: 'favorite-url', type: 'url', content: 'https://github.com/Tonys-Coding/ClipboardPlus', title: 'Clipboard+ on GitHub', sourceUrl: 'https://github.com/Tonys-Coding/ClipboardPlus', sourceApp: 'Google Chrome', favorite: true, createdAt: now - 900000, updatedAt: now - 900000 },
+  { id: 'favorite-url', type: 'url', content: 'https://github.com/Tonys-Coding/ClipboardPlus', sourceUrl: 'https://github.com/Tonys-Coding/ClipboardPlus', sourceApp: 'Google Chrome', favorite: true, createdAt: now - 900000, updatedAt: now - 900000 },
   { id: 'favorite-snippet', type: 'text', content: 'Hi {{name}}, I’ll send the update by {{time|tomorrow morning}}.', sourceApp: 'Clipboard+', favorite: true, createdAt: now - 1200000, updatedAt: now - 1200000 },
-  { id: 'text', type: 'text', content: 'A clear clipboard should make repeated work disappear.', sourceUrl: 'https://example.com/product-notes', sourceApp: 'Google Chrome', favorite: false, createdAt: now - 120000, updatedAt: now - 120000 },
-  { id: 'code', type: 'code', content: 'const usefulClips = history.filter((clip) => clip.favorite);', sourceUrl: 'https://developer.mozilla.org/', sourceApp: 'Google Chrome', favorite: false, createdAt: now - 360000, updatedAt: now - 360000 },
-  { id: 'docs', type: 'url', content: 'https://developer.chrome.com/docs/extensions/', sourceUrl: 'https://developer.chrome.com/', sourceApp: 'Google Chrome', favorite: false, createdAt: now - 480000, updatedAt: now - 480000 },
-  { id: 'note', type: 'text', content: 'Remember to remove tracking parameters before sharing the campaign link.', sourceUrl: 'https://notion.so/', sourceApp: 'Google Chrome', favorite: false, createdAt: now - 600000, updatedAt: now - 600000 },
+  { id: 'text', type: 'text', content: 'Keep useful clips close.', title: 'Clipboard+ — Keep useful clips close', sourceUrl: 'https://tonys-coding.github.io/ClipboardPlus/', sourceApp: 'Google Chrome', favorite: false, createdAt: now - 120000, updatedAt: now - 120000 },
+  { id: 'code', type: 'code', content: "export function normalizeContent(value: string): string {\n  return value.replace(/\\r\\n?/g, '\\n').trim();\n}", sourceUrl: 'https://github.com/Tonys-Coding/ClipboardPlus/blob/main/src/lib/clips.ts', sourceApp: 'Google Chrome', favorite: false, createdAt: now - 360000, updatedAt: now - 360000 },
+  { id: 'docs', type: 'url', content: 'https://developer.chrome.com/docs/extensions/', sourceUrl: 'https://developer.chrome.com/docs/extensions/', sourceApp: 'Google Chrome', favorite: false, createdAt: now - 480000, updatedAt: now - 480000 },
+  { id: 'note', type: 'text', content: 'Remember to remove tracking parameters before sharing the campaign link.', sourceApp: 'Clipboard+', favorite: false, createdAt: now - 600000, updatedAt: now - 600000 },
 ];
 
 let context;
@@ -40,6 +40,7 @@ try {
     await chrome.storage.local.set({
       clipboardPlus: {
         version: 2,
+        classificationVersion: 2,
         clips: sampleClips,
         settings: { autoCapture: false, historyLimit: 500, excludedSites: [], captureConsentVersion: 1 },
       },
@@ -49,13 +50,14 @@ try {
 
   const popup = await context.newPage();
   await popup.goto(`chrome-extension://${extensionId}/popup.html`);
-  await popup.locator('.clip-content').filter({ hasText: 'A clear clipboard should make repeated work disappear.' }).waitFor();
+  await popup.locator('.clip-content').filter({ hasText: 'Keep useful clips close.' }).waitFor();
   await popup.addStyleTag({ content: `
     html, body, #root { width: 1280px !important; height: 800px !important; }
     body, #root { display: grid !important; place-items: center !important; background: #e3ebea !important; }
-    .popup-shell { box-shadow: 0 24px 56px rgba(20, 55, 68, .17); border: 1px solid #c7d6d6; }
   ` });
-  await popup.waitForTimeout(300);
+  await popup.evaluate(() => document.fonts.ready);
+  await popup.getByText('Website access is off, so copies on websites are not saved.').waitFor();
+  await popup.getByRole('heading', { name: 'Recent' }).waitFor();
   await popup.screenshot({ path: resolve(output, 'screenshot-1-history.png') });
   await popup.locator('.popup-shell').screenshot({ path: resolve(siteAssets, 'workspace-preview.png') });
   await popup.getByRole('button', { name: 'Dark mode' }).click();
@@ -64,23 +66,33 @@ try {
   await popup.getByRole('button', { name: 'Dark mode' }).click();
   await popup.getByRole('button', { name: 'Dark mode', pressed: false }).waitFor();
 
-  await popup.getByRole('textbox', { name: 'Search clips' }).fill('github');
+  await popup.getByRole('textbox', { name: 'Search clips' }).fill('tracking');
+  await popup.locator('.clip-content').filter({ hasText: 'Remember to remove tracking parameters' }).waitFor();
   await popup.screenshot({ path: resolve(output, 'screenshot-2-search.png') });
   await popup.getByRole('button', { name: 'Clear search' }).click();
   await popup.getByRole('button', { name: 'Code', exact: true }).click();
+  await popup.locator('.clip-content').filter({ hasText: 'export function normalizeContent' }).waitFor();
   await popup.screenshot({ path: resolve(output, 'screenshot-3-code-filter.png') });
-  await popup.getByRole('button', { name: 'All' }).click();
-  await popup.getByRole('button', { name: /add clip/i }).click();
-  await popup.getByLabel(/Paste or type anything/).fill('Hello {{name}}, your summary is ready.');
+  await popup.getByRole('button', { name: 'Saved', exact: true }).click();
+  await popup.locator('[data-clip-row]').filter({ hasText: 'Hi {{name}}' }).click();
+  const snippetDialog = popup.getByRole('dialog', { name: 'Fill in the fields' });
+  await snippetDialog.getByRole('textbox', { name: 'name' }).fill('Alex');
+  await snippetDialog.getByLabel('Snippet preview').getByText('Hi Alex, I’ll send the update by tomorrow morning.').waitFor();
   await popup.screenshot({ path: resolve(output, 'screenshot-4-smart-snippet.png') });
+  // Show the real first-run disclosure in the fifth image, not a permission state we did not grant.
+  await popup.evaluate(async () => {
+    const stored = (await chrome.storage.local.get('clipboardPlus')).clipboardPlus;
+    stored.settings.captureConsentVersion = 0;
+    delete stored.settings.captureConsentAt;
+    await chrome.storage.local.set({ clipboardPlus: stored });
+  });
   await popup.close();
 
   const options = await context.newPage();
   await options.goto(`chrome-extension://${extensionId}/options.html`);
-  await options.getByText('What to capture').waitFor();
-  await options.locator('.capture-details-card').evaluate((card) => {
-    window.scrollTo(0, card.getBoundingClientRect().top + window.scrollY - 20);
-  });
+  await options.getByRole('heading', { name: 'Capture controls' }).waitFor();
+  await options.getByRole('heading', { name: 'Enable automatic website capture?' }).waitFor();
+  await options.evaluate(() => document.fonts.ready);
   await options.screenshot({ path: resolve(output, 'screenshot-5-privacy-controls.png'), fullPage: false });
   await copyFile(resolve(output, 'screenshot-5-privacy-controls.png'), resolve(siteAssets, 'capture-controls-preview.png'));
   await options.close();
