@@ -70,7 +70,7 @@ Upgrading from 1.5.0 or 1.5.1 resets the old build-specific Accessibility entry 
 - Without the companion, Chrome internal pages, the Chrome Web Store, browser UI, and desktop applications cannot be captured. The companion sees the resulting system clipboard instead and covers most of those gaps.
 - Incognito access is disabled in the manifest.
 
-The public [privacy policy](https://tonys-coding.github.io/ClipboardPlus/privacy.html), [support page](https://tonys-coding.github.io/ClipboardPlus/support.html), and [data-deletion instructions](https://tonys-coding.github.io/ClipboardPlus/data-deletion.html) are maintained from `docs/`. `npm run assets:store` refreshes the five store screenshots, two promo tiles, and Workspace and Capture Controls previews used by the homepage. `npm run test:site` checks the five public pages at desktop and mobile sizes.
+The public [privacy policy](https://tonys-coding.github.io/ClipboardPlus/privacy.html), [support page](https://tonys-coding.github.io/ClipboardPlus/support.html), and [data-deletion instructions](https://tonys-coding.github.io/ClipboardPlus/data-deletion.html) are maintained from `docs/`. `npm run assets:store` refreshes the five store screenshots, two promo tiles, and Workspace and Capture Controls previews used by the homepage. Promo tiles render at 3× density before downsampling to the Chrome Web Store's exact 440×280 and 1400×560 dimensions. `npm run test:site` checks the five public pages at desktop and mobile sizes.
 
 ## Using the extension
 
