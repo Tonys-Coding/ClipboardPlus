@@ -27,7 +27,7 @@ describe('Options', () => {
         onAdded: { addListener: vi.fn(), removeListener: vi.fn() },
         onRemoved: { addListener: vi.fn(), removeListener: vi.fn() },
       },
-      runtime: { getManifest: vi.fn(() => ({ version: '1.8.4' })) },
+      runtime: { getManifest: vi.fn(() => ({ version: '1.8.5' })) },
       commands: { getAll: vi.fn().mockResolvedValue([{ name: '_execute_action', shortcut: 'Alt+Shift+C' }]) },
       scripting: { getRegisteredContentScripts: vi.fn().mockResolvedValue([]) },
       tabs: { create: vi.fn().mockResolvedValue(undefined) },
@@ -144,7 +144,7 @@ describe('Options', () => {
   it('shows the runtime version, the current shortcut, and shortcut settings instructions', async () => {
     const user = userEvent.setup();
     render(<Options />);
-    await screen.findByText('Clipboard+ 1.8.4');
+    await screen.findByText('Clipboard+ 1.8.5');
     expect(await screen.findByText('Press Alt+Shift+C to open Clipboard+ and focus search.')).toBeInTheDocument();
     expect(screen.getByText(/browser-only shortcut works while Chrome is in front/)).toBeInTheDocument();
 
@@ -176,13 +176,13 @@ describe('Options', () => {
       permissions: { websiteAccess: true },
     });
     render(<Options />);
-    await screen.findByText('Clipboard+ 1.8.4');
+    await screen.findByText('Clipboard+ 1.8.5');
 
     await user.click(screen.getByRole('button', { name: 'Copy troubleshooting details' }));
 
     const report = clipboardWrite.mock.calls.at(-1)?.[0] ?? '';
     expect(report).toContain('Clipboard+ troubleshooting details');
-    expect(report).toContain('Version: 1.8.4');
+    expect(report).toContain('Version: 1.8.5');
     expect(report).toMatch(/Build profile: (?:development|store)/);
     expect(report).toContain('Capture listener registered: no');
     expect(report).not.toContain('SEKRIT');
@@ -196,7 +196,7 @@ describe('Options', () => {
     const user = userEvent.setup();
     vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('blocked'));
     render(<Options />);
-    await screen.findByText('Clipboard+ 1.8.4');
+    await screen.findByText('Clipboard+ 1.8.5');
 
     await user.click(screen.getByRole('button', { name: 'Copy troubleshooting details' }));
     expect(await screen.findByText(/Clipboard access was blocked/, { selector: '.diagnostics-feedback' })).toBeInTheDocument();
@@ -207,7 +207,7 @@ describe('Options', () => {
     const clipboardWrite = vi.spyOn(navigator.clipboard, 'writeText');
     vi.mocked(sendMessage).mockResolvedValue({ ok: true, state, permissions: { websiteAccess: true } });
     render(<Options />);
-    await screen.findByText('Clipboard+ 1.8.4');
+    await screen.findByText('Clipboard+ 1.8.5');
 
     // Capture is enabled elsewhere: storage and permission events must refresh the About status.
     vi.mocked(sendMessage).mockResolvedValue({
@@ -252,7 +252,7 @@ describe('Options', () => {
       permissions: { websiteAccess: true },
     });
     render(<Options />);
-    await screen.findByText('Clipboard+ 1.8.4');
+    await screen.findByText('Clipboard+ 1.8.5');
 
     await user.click(screen.getByRole('button', { name: 'Copy troubleshooting details' }));
     const report = clipboardWrite.mock.calls.at(-1)?.[0] ?? '';
@@ -263,7 +263,7 @@ describe('Options', () => {
     const user = userEvent.setup();
     const clipboardWrite = vi.spyOn(navigator.clipboard, 'writeText');
     render(<Options />);
-    await screen.findByText('Clipboard+ 1.8.4');
+    await screen.findByText('Clipboard+ 1.8.5');
 
     vi.mocked(sendMessage).mockRejectedValue(new Error('Clipboard+ background service is unavailable.'));
     await user.click(screen.getByRole('button', { name: 'Copy troubleshooting details' }));
@@ -275,7 +275,7 @@ describe('Options', () => {
   it('announces diagnostics feedback through a polite live region', async () => {
     const user = userEvent.setup();
     render(<Options />);
-    await screen.findByText('Clipboard+ 1.8.4');
+    await screen.findByText('Clipboard+ 1.8.5');
 
     await user.click(screen.getByRole('button', { name: 'Copy troubleshooting details' }));
     const liveRegion = await screen.findByText('Troubleshooting details copied to your clipboard.');

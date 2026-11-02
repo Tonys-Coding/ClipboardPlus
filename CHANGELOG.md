@@ -2,6 +2,12 @@
 
 Clipboard+'s Git history was reconstructed from local development milestones after versions 1.0.0 through 1.4.2 had already been built. Those tags preserve the rollout order; their publication timestamps are intentionally not backdated. Releases from 1.5.0 onward follow the live project history.
 
+## 1.8.5
+
+- Make Code classification more conservative: require recognizable syntax instead of generic programming words, brackets, or incidental HTML/CSS/SQL within prose.
+- Reclassify existing clips once on upgrade, preserving their content, favorites, sources, and timestamps. Ambiguous snippets now stay in Text.
+- Restore the original v1.8.4 small and marquee promotional tiles and their generator.
+
 ## 1.8.4
 
 - Use the requested Lucide icon set consistently across the five Workspace sections: Playing Cards Fan for All, Save for Saved, Pencil Ruler for Text, Link 2 for Links, and Code XML for Code.

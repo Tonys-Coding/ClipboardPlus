@@ -36,7 +36,7 @@ Each verified extension version updates the manifest, package metadata, README, 
 
 ## macOS companion
 
-The companion is currently a developer preview and is not included or advertised as available in the v1.8.4 Chrome Web Store package. It remains part of the permanent free feature set and will return to the public interface after Apple signing, notarization, and consumer installation are complete.
+The companion is currently a developer preview and is not included or advertised as available in the v1.8.5 Chrome Web Store package. It remains part of the permanent free feature set and will return to the public interface after Apple signing, notarization, and consumer installation are complete.
 
 Install and start universal capture with:
 
@@ -70,12 +70,13 @@ Upgrading from 1.5.0 or 1.5.1 resets the old build-specific Accessibility entry 
 - Without the companion, Chrome internal pages, the Chrome Web Store, browser UI, and desktop applications cannot be captured. The companion sees the resulting system clipboard instead and covers most of those gaps.
 - Incognito access is disabled in the manifest.
 
-The public [privacy policy](https://tonys-coding.github.io/ClipboardPlus/privacy.html), [support page](https://tonys-coding.github.io/ClipboardPlus/support.html), and [data-deletion instructions](https://tonys-coding.github.io/ClipboardPlus/data-deletion.html) are maintained from `docs/`. `npm run assets:store` refreshes the five store screenshots, two promo tiles, and Workspace and Capture Controls previews used by the homepage. Promo tiles render at 3× density before downsampling to the Chrome Web Store's exact 440×280 and 1400×560 dimensions. `npm run test:site` checks the five public pages at desktop and mobile sizes.
+The public [privacy policy](https://tonys-coding.github.io/ClipboardPlus/privacy.html), [support page](https://tonys-coding.github.io/ClipboardPlus/support.html), and [data-deletion instructions](https://tonys-coding.github.io/ClipboardPlus/data-deletion.html) are maintained from `docs/`. `npm run assets:store` refreshes the five store screenshots, two promo tiles, and Workspace and Capture Controls previews used by the homepage. `npm run test:site` checks the five public pages at desktop and mobile sizes.
 
 ## Using the extension
 
 - Click a clip to copy it immediately.
 - Favorite clips live exclusively in **Saved**; **All**, **Text**, **Links**, and **Code** show only non-favorite history so clips are never repeated between sections.
+- Code classification favors precision: clear programming syntax, complete structured data, markup, or commands enter **Code**; ambiguous text stays in **Text**. Updating to v1.8.5 rechecks existing clips once without changing their contents, favorites, sources, or timestamps.
 - Press the suggested **Alt+Shift+C** shortcut (reassignable on Chrome's shortcuts page) to open Clipboard+ with search focused, then use the arrow, Home, and End keys to move through favorites and recent clips and Enter to copy the focused row.
 - Create a smart snippet with named fields such as `Hello {{name}}`; add an optional default with `{{company|Clipboard+}}`. Clicking the snippet asks for each unique field and shows the finished result before copying.
 - Open a clip's three-dot menu and choose **Preview** to read the full clip with preserved whitespace, type, size, and source details before copying.
@@ -106,4 +107,4 @@ Developer-account registration, two-step verification, trader classification, an
 
 ## Monetization boundary
 
-Everything included through v1.8.4 remains free. Bug fixes, security updates, privacy controls, accessibility, data ownership, and browser compatibility are not paid upgrades. A future Pro launch is gated on public demand and is planned around end-to-end encrypted cross-device sync, folders or sessions, encrypted backup and restore, and device management. The target launch price is $3.99 monthly or $29.99 yearly with a 14-day no-card trial; no billing or account code exists in v1.8.4.
+Everything included through v1.8.5 remains free. Bug fixes, security updates, privacy controls, accessibility, data ownership, and browser compatibility are not paid upgrades. A future Pro launch is gated on public demand and is planned around end-to-end encrypted cross-device sync, folders or sessions, encrypted backup and restore, and device management. The target launch price is $3.99 monthly or $29.99 yearly with a 14-day no-card trial; no billing or account code exists in v1.8.5.

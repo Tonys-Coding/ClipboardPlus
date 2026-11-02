@@ -102,11 +102,33 @@ try {
   assert(!initial.manifest.permissions?.includes('nativeMessaging'), 'The store manifest includes Native Messaging.');
   assert(!initial.manifest.host_permissions?.length, 'The store manifest includes required website access.');
 
+  // Existing Code mistakes should move to Text when the updated classifier first reads storage.
+  const olderClip = {
+    id: 'old-code-mistake',
+    type: 'code',
+    content: 'Write a function if {examples} are available, then return [notes].',
+    sourceApp: 'Google Chrome',
+    favorite: true,
+    createdAt: 100,
+    updatedAt: 200,
+  };
+  await options.evaluate(async (clip) => {
+    const state = (await chrome.storage.local.get('clipboardPlus')).clipboardPlus;
+    delete state.classificationVersion;
+    state.clips = [clip];
+    await chrome.storage.local.set({ clipboardPlus: state });
+  }, olderClip);
+
   const fixture = await context.newPage();
   await fixture.goto(fixtureOrigin);
   const popup = await context.newPage();
   await popup.goto(`chrome-extension://${extensionId}/popup.html`);
   await popup.getByRole('button', { name: /add clip/i }).waitFor();
+  const migrated = await storedState(popup);
+  assert(migrated.classificationVersion === 2, 'The store build did not persist the new classifier version.');
+  const migratedClip = migrated.clips.find((clip) => clip.id === olderClip.id);
+  assert(Object.entries({ ...olderClip, type: 'text' }).every(([key, value]) => migratedClip?.[key] === value),
+    'An existing Code mistake was not reclassified without changing its saved data.');
 
   // Chrome measures an action popup from a tiny initial viewport. Its document
   // must provide an intrinsic width instead of collapsing to that viewport.
@@ -185,7 +207,7 @@ try {
   const aboutPage = await context.newPage();
   await aboutPage.goto(`chrome-extension://${extensionId}/options.html`);
   await aboutPage.getByText('About & help').waitFor({ state: 'attached' });
-  await aboutPage.getByRole('heading', { name: 'Clipboard+ 1.8.4' }).waitFor({ state: 'attached' });
+  await aboutPage.getByRole('heading', { name: 'Clipboard+ 1.8.5' }).waitFor({ state: 'attached' });
   const diagnostics = await aboutPage.locator('.diagnostics-preview').textContent();
   assert(diagnostics.includes('Website access granted: no'), 'Troubleshooting details must report missing website access.');
   for (const secret of ['Manual store-profile clip', '{{name|friend}}', fixtureOrigin]) {

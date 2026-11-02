@@ -3,6 +3,30 @@ import type { AddClipInput, Clip, ClipType, RetentionDays, Settings, StorageStat
 export const STORAGE_KEY = 'clipboardPlus';
 export const MAX_CLIP_LENGTH = 50_000;
 export const CAPTURE_CONSENT_VERSION = 1;
+export const CLIP_CLASSIFIER_VERSION = 2;
+
+const CODE_FENCE_LANGUAGES = new Set([
+  'bash', 'c', 'cpp', 'cs', 'css', 'go', 'html', 'java', 'javascript', 'js', 'json',
+  'jsx', 'kotlin', 'php', 'py', 'python', 'rb', 'ruby', 'rust', 'sh', 'sql', 'swift',
+  'ts', 'tsx', 'typescript', 'xml', 'yaml', 'yml', 'zsh',
+]);
+
+// Prefer a missed short snippet over putting ordinary prose into Code.
+// A keyword or punctuation mark alone is not enough evidence.
+const CODE_START_PATTERNS = [
+  /^(?:export\s+(?:default\s+)?)?(?:async\s+)?function\s+[$A-Za-z_][\w$]*\s*\(/,
+  /^(?:export\s+(?:default\s+)?)?(?:class|interface|enum)\s+[$A-Za-z_][\w$]*(?:\s+(?:extends|implements)\s+[\w$., ]+)?\s*[<{]/,
+  /^(?:export\s+)?type\s+[$A-Za-z_][\w$]*\s*=/,
+  /^(?:export\s+)?(?:const|let|var)\s+[$A-Za-z_][\w$]*(?:\s*:\s*[^=]+)?\s*=\s*\S/,
+  /^import\s+(?:.+\s+from\s+['"][^'"]+['"]|[{('"])/,
+  /^def\s+[A-Za-z_]\w*\s*\([^)]*\)\s*(?:->\s*[^:]+)?:/,
+  /^class\s+[A-Za-z_]\w*(?:\([^)]*\))?:/,
+  /^(?:if|for|while|switch|catch)\s*\([^)]*\)\s*(?:\{|:|=>)\s*$/,
+  /^func\s+[A-Za-z_]\w*\s*\([^)]*\)\s*(?:->\s*[\w?]+)?\s*\{/,
+  /^(?:return|throw)\s+.+;\s*$/,
+  /^(?:console|Math|JSON|document|window)\.\w+\s*\([^)]*\)\s*;?$/,
+  /^(?:[$A-Za-z_][\w$]*\.)*[$A-Za-z_][\w$]*\s*=\s*[^=].*;\s*$/,
+];
 
 export const DEFAULT_SETTINGS: Settings = {
   theme: 'light',
@@ -21,6 +45,7 @@ export const DEFAULT_SETTINGS: Settings = {
 
 export const DEFAULT_STATE: StorageState = {
   version: 2,
+  classificationVersion: CLIP_CLASSIFIER_VERSION,
   clips: [],
   settings: DEFAULT_SETTINGS,
 };
@@ -30,9 +55,18 @@ export function normalizeContent(value: string): string {
 }
 
 export function looksLikeCode(content: string): boolean {
-  const value = content.trim();
+  let value = content.trim();
   if (value.length < 4) return false;
-  if (/^```[\s\S]*```$/m.test(value) || /^#!\s*\/\S+/m.test(value)) return true;
+
+  const fenced = /^```([^\n]*)\n([\s\S]*?)\n```$/.exec(value);
+  if (fenced) {
+    const language = fenced[1].trim().toLowerCase();
+    if (['text', 'plaintext', 'md', 'markdown'].includes(language)) return false;
+    if (CODE_FENCE_LANGUAGES.has(language)) return true;
+    value = fenced[2].trim();
+  }
+  if (value.length < 4) return false;
+  if (/^#!\s*\/\S+/.test(value)) return true;
 
   try {
     const parsed: unknown = JSON.parse(value);
@@ -41,19 +75,17 @@ export function looksLikeCode(content: string): boolean {
     // Most code is not JSON; continue with syntax signals.
   }
 
-  if (/<[a-z][^>]*>[\s\S]*<\/[a-z][^>]*>|<[a-z][^>]*\/>/i.test(value)) return true;
-  if (/\b(?:SELECT[\s\S]+FROM|INSERT\s+INTO|UPDATE[\s\S]+SET|CREATE\s+TABLE)\b/i.test(value)) return true;
-  if (/(?:^|\n)\s*(?:[#.$][\w-]+|[a-z][\w-]*(?:\s+[.#][\w-]+)?)\s*\{[^}]+:[^}]+\}/im.test(value)) return true;
+  if (/^<([a-z][\w:-]*)(?:\s[^>]*)?>[\s\S]*<\/\1>$/i.test(value)
+    || /^<[a-z][\w:-]*(?:\s[^>]*)?\/>$/i.test(value)) return true;
+  if (/^SELECT\b[\s\S]+\bFROM\b/.test(value) && /[;*=]/.test(value)) return true;
+  if (/^(?:INSERT\s+INTO|UPDATE\s+\w+\s+SET|CREATE\s+TABLE)\b/i.test(value)
+    && /[;=()]/.test(value)) return true;
+  if (/^[.#]?[a-z][\w-]*(?:\s+[.#][\w-]+)?\s*\{\s*[\w-]+\s*:\s*[^{}]+\}$/i.test(value)) return true;
+  if (/^(?:\$|>)\s+(?:npm|pnpm|yarn|git|curl|brew|python|node|swift|cargo)\b/.test(value)) return true;
 
-  let score = 0;
-  if (/\b(?:const|let|var|function|class|interface|enum|type|import|export|return|async|await|def|lambda|public|private|protected|package|namespace|func|struct|if|else|switch|case|for|while|try|catch|throw|new)\b/.test(value)) score += 2;
-  if (/=>|===|!==|==|!=|:=|->|&&|\|\||\?\?/.test(value)) score += 2;
-  if (/[{}[\]]/.test(value)) score += 1;
-  if (/;\s*(?:\n|$)/m.test(value)) score += 1;
-  if (/\b[\w.$]+\([^\n)]*\)\s*(?:[{:;]|=>|$)/m.test(value)) score += 1;
-  if (/\n(?:\t| {2,})\S/.test(value)) score += 1;
-  if (/^(?:\$|>)\s+(?:npm|pnpm|yarn|git|curl|brew|python|node|swift|cargo)\b/m.test(value)) score += 3;
-  return score >= 3;
+  const firstStatement = value.split('\n').map((line) => line.trim())
+    .find((line) => line && !/^(?:\/\/|\/\*|\*|#\s)/.test(line));
+  return firstStatement ? CODE_START_PATTERNS.some((pattern) => pattern.test(firstStatement)) : false;
 }
 
 export function detectClipType(content: string): ClipType {
@@ -176,7 +208,8 @@ export function addClip(
 export function migrateState(value: unknown): StorageState {
   if (!value || typeof value !== 'object') return structuredClone(DEFAULT_STATE);
   const candidate = value as Partial<StorageState>;
-  const needsTypeMigration = candidate.version !== 2;
+  const needsTypeMigration = candidate.version !== 2
+    || candidate.classificationVersion !== CLIP_CLASSIFIER_VERSION;
   const storedSettings: Partial<Settings> = candidate.settings ?? {};
   const hasCurrentConsent = typeof storedSettings.captureConsentVersion === 'number'
     && storedSettings.captureConsentVersion >= CAPTURE_CONSENT_VERSION
@@ -189,6 +222,7 @@ export function migrateState(value: unknown): StorageState {
     : DEFAULT_SETTINGS.captureTypes;
   return maintainState({
     version: 2,
+    classificationVersion: CLIP_CLASSIFIER_VERSION,
     clips: Array.isArray(candidate.clips)
       ? candidate.clips.map((clip) => ({
           ...clip,

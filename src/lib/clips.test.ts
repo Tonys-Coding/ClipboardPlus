@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_STATE,
+  CLIP_CLASSIFIER_VERSION,
   addClip,
   detectClipType,
   filterClips,
@@ -34,6 +35,35 @@ describe('clip behavior', () => {
     expect(detectClipType('javascript:alert(1)')).toBe('text');
     expect(detectClipType('See https://example.com')).toBe('text');
     expect(detectClipType('Reminder: call John (555) 555-0100 tomorrow.')).toBe('text');
+  });
+
+  it.each([
+    'const total = items.reduce((sum, item) => sum + item.price, 0);',
+    'function greet(name) { return `Hello ${name}`; }',
+    'def greet(name):\n  return f"Hello {name}"',
+    '<div class="notice">Hello</div>',
+    'body { color: red; }',
+    'SELECT * FROM customers WHERE active = 1;',
+    '$ npm run build',
+    '```typescript\nconst count = 1;\n```',
+  ])('recognizes strong code syntax: %s', (content) => {
+    expect(detectClipType(content)).toBe('code');
+  });
+
+  it.each([
+    'Write a function if {examples} are available, then return [notes].',
+    'Please format <strong>important</strong> text and send it to me.',
+    'SELECT a quote FROM the list and explain why it matters.',
+    'The style body { color: red; } appears in the article.',
+    'If the class starts late, let me know. [Room 204]',
+    'The word return appears in this paragraph; it is not source code.',
+    'Use `const` in the explanation and include {two examples}.',
+    'class room is available for the next meeting.',
+    'if (you can) { please call me }',
+    '```text\nThis is just a note with {braces}.\n```',
+    'Here is my explanation:\n```js\nconst value = 1;\n```\nPlease read it first.',
+  ])('keeps code-like prose in Text: %s', (content) => {
+    expect(detectClipType(content)).toBe('text');
   });
 
   it('deduplicates content, moves it to the top, and preserves its favorite', () => {
@@ -83,6 +113,16 @@ describe('clip behavior', () => {
     })).toEqual({ content: 'https://example.com', title: undefined, sourceUrl: 'https://source.test/page', sourceApp: undefined });
   });
 
+  it('does not treat code-like prose as a Code-only capture', () => {
+    const settings: Settings = {
+      ...DEFAULT_STATE.settings,
+      autoCapture: true,
+      captureTypes: ['code'],
+    };
+    expect(prepareCapturedClip(settings, { content: 'Write a function if {examples} are available, then return [notes].' })).toBeNull();
+    expect(prepareCapturedClip(settings, { content: 'const answer = 42;' })).toMatchObject({ content: 'const answer = 42;' });
+  });
+
   it('migrates missing settings and reclassifies legacy clips', () => {
     const state = migrateState({
       version: 1,
@@ -91,6 +131,36 @@ describe('clip behavior', () => {
     expect(state.settings).toEqual(DEFAULT_STATE.settings);
     expect(state.version).toBe(2);
     expect(state.clips[0].type).toBe('code');
+    expect(state.classificationVersion).toBe(CLIP_CLASSIFIER_VERSION);
+  });
+
+  it('reclassifies old Code entries once without changing content, favorites, or timestamps', () => {
+    const mistaken = {
+      ...makeClip('mistaken', true, 123),
+      type: 'code' as const,
+      content: 'Write a function if {examples} are available, then return [notes].',
+    };
+    const actualCode = { ...makeClip('real', false, 100), content: 'const answer = 42;' };
+    const migrated = migrateState({
+      version: 2,
+      clips: [mistaken, actualCode],
+      settings: DEFAULT_STATE.settings,
+    });
+    expect(migrated.classificationVersion).toBe(CLIP_CLASSIFIER_VERSION);
+    expect(migrated.clips.find((clip) => clip.id === 'mistaken')).toEqual({ ...mistaken, type: 'text' });
+    expect(migrated.clips.find((clip) => clip.id === 'real')?.type).toBe('code');
+    expect(migrateState(migrated)).toEqual(migrated);
+  });
+
+  it('cleans a full 500-clip history without dropping records', () => {
+    const clips = Array.from({ length: 500 }, (_, index) => ({
+      ...makeClip(`old-${index}`, false, index + 1),
+      type: 'code' as const,
+      content: `Please return note [${index}] with {examples}.`,
+    }));
+    const migrated = migrateState({ version: 2, clips, settings: DEFAULT_STATE.settings });
+    expect(migrated.clips).toHaveLength(500);
+    expect(migrated.clips.every((clip) => clip.type === 'text')).toBe(true);
   });
 
   it('pauses legacy automatic capture until the current disclosure is accepted', () => {

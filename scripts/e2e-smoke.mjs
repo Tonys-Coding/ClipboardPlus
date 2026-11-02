@@ -20,6 +20,7 @@ const server = createServer((_request, response) => {
     <p id="keyboard-copy">Copied with Command C</p>
     <p id="menu-copy">Copied through the copy event</p>
     <pre id="code-copy">const captured = clips.map((clip) =&gt; clip.content);</pre>
+    <p id="prose-copy">Write a function if {examples} are available, then return [notes].</p>
     <p id="filtered-url">https://filtered.example/path</p>
     <p id="source-free">Captured without source details</p>
     <p id="paused-copy">This copy happened during a privacy pause</p>
@@ -96,6 +97,9 @@ try {
   await page.locator('#code-copy').selectText();
   await page.keyboard.press(process.platform === 'darwin' ? 'Meta+C' : 'Control+C');
 
+  await page.locator('#prose-copy').selectText();
+  await page.keyboard.press(process.platform === 'darwin' ? 'Meta+C' : 'Control+C');
+
   await page.locator('#password').selectText();
   await page.keyboard.press(process.platform === 'darwin' ? 'Meta+C' : 'Control+C');
 
@@ -103,8 +107,8 @@ try {
   await extensionPage.goto(`chrome-extension://${extensionId}/popup.html`);
   await pollUntil(() => extensionPage.evaluate(async () => {
     const stored = await chrome.storage.local.get('clipboardPlus');
-    return (stored.clipboardPlus?.clips?.length ?? 0) >= 3;
-  }), { description: 'three clips captured from the fixture page' });
+    return (stored.clipboardPlus?.clips?.length ?? 0) >= 4;
+  }), { description: 'four clips captured from the fixture page' });
 
   const popupTypography = await extensionPage.evaluate(async () => {
     await document.fonts.ready;
@@ -123,6 +127,7 @@ try {
   if (!contents.includes('Copied with Command C')) throw new Error('Command+C was not persisted.');
   if (!contents.includes('Copied through the copy event')) throw new Error('The copy event was not persisted.');
   if (result.clips.find((clip) => clip.content.startsWith('const captured'))?.type !== 'code') throw new Error('Copied code was not classified as code.');
+  if (result.clips.find((clip) => clip.content.startsWith('Write a function if'))?.type !== 'text') throw new Error('Code-like prose was not classified as text.');
   if (contents.includes('Never store this password')) throw new Error('A password value was incorrectly persisted.');
   if (!popupTypography.family.includes('Hanken Grotesk') || !popupTypography.loaded) throw new Error('The bundled Hanken Grotesk font was not applied.');
   if (pageErrors.length) throw new Error(`Page errors: ${pageErrors.join('; ')}`);
@@ -501,10 +506,10 @@ try {
   const aboutPage = await context.newPage();
   await aboutPage.goto(`chrome-extension://${extensionId}/options.html`);
   await aboutPage.getByText('About & help').waitFor({ state: 'attached' });
-  await aboutPage.getByRole('heading', { name: 'Clipboard+ 1.8.4' }).waitFor({ state: 'attached' });
+  await aboutPage.getByRole('heading', { name: 'Clipboard+ 1.8.5' }).waitFor({ state: 'attached' });
   await aboutPage.getByText(/to open Clipboard\+ and focus search/).waitFor({ state: 'attached' });
   const diagnostics = await aboutPage.locator('.diagnostics-preview').textContent();
-  if (!diagnostics.includes('Version: 1.8.4')) throw new Error('Troubleshooting details omitted the runtime version.');
+  if (!diagnostics.includes('Version: 1.8.5')) throw new Error('Troubleshooting details omitted the runtime version.');
   for (const secret of ['Copied with Command C', 'filtered.example', '127.0.0.1']) {
     if (diagnostics.includes(secret)) throw new Error(`Troubleshooting details leaked "${secret}".`);
   }
@@ -547,7 +552,7 @@ try {
     captureRecoveredOnOpenTab: true,
     externalRevocationEvidence,
     permissionRevocationProfile: 'store build (development build requires website access)',
-    aboutVersion: '1.8.4',
+    aboutVersion: '1.8.5',
     favoritesExclusiveToSaved: true,
     troubleshootingRedacted: true,
     screenshots: ['popup-preview.png', 'options-about.png'],

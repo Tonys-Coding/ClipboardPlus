@@ -31,6 +31,7 @@ export interface Settings {
 
 export interface StorageState {
   version: 2;
+  classificationVersion?: number;
   clips: Clip[];
   settings: Settings;
 }
