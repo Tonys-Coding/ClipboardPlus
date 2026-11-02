@@ -2,6 +2,11 @@
 
 Clipboard+'s Git history was reconstructed from local development milestones after versions 1.0.0 through 1.4.2 had already been built. Those tags preserve the rollout order; their publication timestamps are intentionally not backdated. Releases from 1.5.0 onward follow the live project history.
 
+## Listing artwork update (2026-11-02; extension remains 1.8.5)
+
+- Replace the small and marquee promo tiles with the owner's high-resolution artwork, precisely fitted to the Chrome Web Store's 440×280 and 1400×560 requirements.
+- Keep the supplied source JPEGs and update the asset generator so future refreshes preserve this artwork.
+
 ## 1.8.5
 
 - Make Code classification more conservative: require recognizable syntax instead of generic programming words, brackets, or incidental HTML/CSS/SQL within prose.

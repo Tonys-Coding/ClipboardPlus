@@ -86,26 +86,20 @@ try {
   await options.close();
 
   const logo = (await readFile(resolve(root, 'public/icons/clipboard-plus-logo.png'))).toString('base64');
-  const preview = (await readFile(resolve(siteAssets, 'workspace-preview.png'))).toString('base64');
-  const renderPromo = async (width, height, file, headline, subhead) => {
+  const renderPromo = async (width, height, file, sourceFile) => {
     const page = await context.newPage();
     await page.setViewportSize({ width, height });
-    const isMarquee = width > 500;
-    await page.setContent(isMarquee ? `<!doctype html><style>
-      @font-face{font-family:Hanken;src:url(data:font/woff2;base64,${(await readFile(resolve(root, 'public/fonts/HankenGrotesk-Variable.woff2'))).toString('base64')})}
-      *{box-sizing:border-box}body{margin:0;width:${width}px;height:${height}px;display:grid;grid-template-columns:580px 1fr;align-items:center;gap:46px;padding:56px 68px;color:#f5f8f5;background:#173744;font-family:Hanken,sans-serif;overflow:hidden}
-      .brand{display:flex;align-items:center;gap:20px;font-size:36px;font-weight:800;letter-spacing:-.03em}.brand img{width:74px;height:74px;object-fit:contain}.brand b{color:#f0bd35}h1{max-width:11ch;margin:42px 0 16px;font-size:64px;line-height:1.02;letter-spacing:-.035em}p{max-width:24ch;margin:0;color:#d2e1df;font-size:25px;line-height:1.3}.preview{display:block;width:100%;border:1px solid #96afb3;border-radius:14px;box-shadow:0 20px 42px rgba(5,22,27,.28)}
-    </style><div><div class="brand"><img src="data:image/png;base64,${logo}" alt=""><span>Clipboard<b>+</b></span></div><h1>${headline}</h1><p>${subhead}</p></div><img class="preview" src="data:image/png;base64,${preview}" alt="">` : `<!doctype html><style>
-      @font-face{font-family:Hanken;src:url(data:font/woff2;base64,${(await readFile(resolve(root, 'public/fonts/HankenGrotesk-Variable.woff2'))).toString('base64')})}
-      *{box-sizing:border-box}body{margin:0;width:${width}px;height:${height}px;display:flex;align-items:center;gap:24px;padding:30px;color:#f5f8f5;background:#173744;font-family:Hanken,sans-serif;overflow:hidden}
-      img{width:126px;height:126px;object-fit:contain}div{min-width:0}h1{margin:0;font-size:46px;letter-spacing:-.03em;line-height:.95}h1 b{color:#f0bd35}p{margin:14px 0 0;color:#d2e1df;font-size:17px;font-weight:500;line-height:1.3}
-    </style><img src="data:image/png;base64,${logo}" alt=""><div><h1>${headline}<b>+</b></h1><p>${subhead}</p></div>`);
-    await page.evaluate(() => document.fonts.ready);
+    const source = (await readFile(resolve(output, 'source', sourceFile))).toString('base64');
+    await page.setContent(`<!doctype html><style>
+      html,body{margin:0;width:100%;height:100%;overflow:hidden}
+      img{display:block;width:100%;height:100%;object-fit:cover}
+    </style><img src="data:image/jpeg;base64,${source}" alt="">`);
+    await page.locator('img').evaluate((image) => image.decode());
     await page.screenshot({ path: resolve(output, file) });
     await page.close();
   };
-  await renderPromo(440, 280, 'promo-small-440x280.png', 'Clipboard', 'Private clipboard history, ready in one click.');
-  await renderPromo(1400, 560, 'promo-marquee-1400x560.png', 'Keep useful clips close.', 'Text, links, code, and smart snippets—ready when you need them.');
+  await renderPromo(440, 280, 'promo-small-440x280.png', 'promo-small-original.jpeg');
+  await renderPromo(1400, 560, 'promo-marquee-1400x560.png', 'promo-marquee-original.jpeg');
 
   const iconPage = await context.newPage();
   await iconPage.setViewportSize({ width: 128, height: 128 });
